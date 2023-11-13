@@ -1,0 +1,17 @@
+<RCC>
+  <qresource prefix="images">
+    <file alias="background.png">img/background.png</file>
+    <file alias="battery.png">img/battery.png</file>
+    <file alias="cnpc.png">img/cnpc.png</file>
+    <file alias="down.png">img/down.png</file>
+    <file alias="gate1.png">img/gate1.png</file>
+    <file alias="gate2.png">img/gate2.png</file>
+    <file alias="mixer.png">img/mixer.png</file>
+    <file alias="tank.png">img/tank.png</file>
+    <file alias="tube11.png">img/tube11.png</file>
+    <file alias="tube12.png">img/tube12.png</file>
+    <file alias="tube21.png">img/tube21.png</file>
+    <file alias="tube22.png">img/tube22.png</file>
+    <file alias="up.png">img/up.png</file>
+  </qresource>
+</RCC>
