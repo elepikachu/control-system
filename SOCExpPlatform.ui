@@ -511,6 +511,9 @@ color:black
       <property name="styleSheet">
        <string notr="true">color:black</string>
       </property>
+      <property name="decimals">
+       <number>1</number>
+      </property>
      </widget>
      <widget class="QLabel" name="l_DisCurrent">
       <property name="geometry">
@@ -927,6 +930,9 @@ color:black
      <property name="text">
       <string>电缸加压</string>
      </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
     </widget>
     <widget class="QPushButton" name="bB_CylinderHome_S">
      <property name="geometry">
@@ -1023,6 +1029,12 @@ color:black
       <property name="styleSheet">
        <string notr="true">color:black</string>
       </property>
+      <property name="decimals">
+       <number>1</number>
+      </property>
+      <property name="maximum">
+       <double>9999.000000000000000</double>
+      </property>
      </widget>
      <widget class="QDoubleSpinBox" name="dBB_SetFireAlarmHigh">
       <property name="geometry">
@@ -1036,6 +1048,9 @@ color:black
       <property name="styleSheet">
        <string notr="true">color:black</string>
       </property>
+      <property name="decimals">
+       <number>1</number>
+      </property>
      </widget>
      <widget class="QDoubleSpinBox" name="dBB_SetFireAlarmLow">
       <property name="geometry">
@@ -1048,6 +1063,9 @@ color:black
       </property>
       <property name="styleSheet">
        <string notr="true">color:black</string>
+      </property>
+      <property name="decimals">
+       <number>1</number>
       </property>
      </widget>
      <widget class="QLabel" name="l_FireRange">
@@ -1231,6 +1249,12 @@ color:black
       <property name="styleSheet">
        <string notr="true">color:black</string>
       </property>
+      <property name="decimals">
+       <number>1</number>
+      </property>
+      <property name="maximum">
+       <double>999.000000000000000</double>
+      </property>
      </widget>
     </widget>
    </widget>
@@ -1283,6 +1307,12 @@ color:black
      </property>
      <property name="styleSheet">
       <string notr="true">color:black</string>
+     </property>
+     <property name="maximum">
+      <number>9999</number>
+     </property>
+     <property name="value">
+      <number>200</number>
      </property>
     </widget>
     <widget class="QDoubleSpinBox" name="dSB_N2FlowRate">
@@ -1663,6 +1693,9 @@ color:black
    </property>
    <property name="text">
     <string>静音</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
    </property>
   </widget>
   <widget class="QPushButton" name="act_baterry_info">
@@ -2343,6 +2376,9 @@ color:black
     <property name="styleSheet">
      <string notr="true">color:black</string>
     </property>
+    <property name="placeholderText">
+     <string>0.00</string>
+    </property>
    </widget>
    <widget class="QLineEdit" name="dSB_SetCO">
     <property name="geometry">
@@ -2355,6 +2391,9 @@ color:black
     </property>
     <property name="styleSheet">
      <string notr="true">color:black</string>
+    </property>
+    <property name="placeholderText">
+     <string>0.00</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="dSB_SetCH4">
@@ -2369,6 +2408,9 @@ color:black
     <property name="styleSheet">
      <string notr="true">color:black</string>
     </property>
+    <property name="placeholderText">
+     <string>0.00</string>
+    </property>
    </widget>
    <widget class="QLineEdit" name="dSB_SetCO2">
     <property name="geometry">
@@ -2381,6 +2423,9 @@ color:black
     </property>
     <property name="styleSheet">
      <string notr="true">color:black</string>
+    </property>
+    <property name="placeholderText">
+     <string>0.00</string>
     </property>
    </widget>
    <widget class="QLineEdit" name="dSB_SetN2">
@@ -2395,6 +2440,9 @@ color:black
     <property name="styleSheet">
      <string notr="true">color:black</string>
     </property>
+    <property name="placeholderText">
+     <string>0.00</string>
+    </property>
    </widget>
    <widget class="QLineEdit" name="dSB_SetAir">
     <property name="geometry">
@@ -2407,6 +2455,9 @@ color:black
     </property>
     <property name="styleSheet">
      <string notr="true">color:black</string>
+    </property>
+    <property name="placeholderText">
+     <string>0.00</string>
     </property>
    </widget>
    <widget class="QLabel" name="l_AirDis_l">
@@ -3124,6 +3175,12 @@ color:black
     </property>
     <property name="styleSheet">
      <string notr="true">color:black</string>
+    </property>
+    <property name="maximum">
+     <number>9999</number>
+    </property>
+    <property name="value">
+     <number>200</number>
     </property>
    </widget>
    <widget class="QPushButton" name="pB_Path">
