@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# test the ui
 
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
