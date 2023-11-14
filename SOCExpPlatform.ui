@@ -97,7 +97,7 @@ border-image:url(:/images/background.png)
    <property name="title">
     <string>参数显示</string>
    </property>
-   <widget class="QCheckBox" name="checkBox">
+   <widget class="QCheckBox" name="cB_DischargeH2">
     <property name="geometry">
      <rect>
       <x>0</x>
@@ -269,7 +269,7 @@ border-image:url(:/images/background.png)
    <property name="title">
     <string>实时数据显示</string>
    </property>
-   <widget class="QGraphicsView" name="gV_DataDisplay">
+   <widget class="QMyChartView" name="gV_DataDisplay">
     <property name="geometry">
      <rect>
       <x>0</x>
@@ -663,6 +663,13 @@ color:black
       <property name="styleSheet">
        <string notr="true">color:black</string>
       </property>
+      <property name="rowCount">
+       <number>4</number>
+      </property>
+      <row/>
+      <row/>
+      <row/>
+      <row/>
       <column>
        <property name="text">
         <string>参与状态</string>
@@ -735,7 +742,7 @@ color:black
        <string>执行</string>
       </property>
      </widget>
-     <widget class="QPushButton" name="bB_Stove_E">
+     <widget class="QPushButton" name="bB_Discharge_E">
       <property name="geometry">
        <rect>
         <x>330</x>
@@ -777,6 +784,9 @@ color:black
      <property name="styleSheet">
       <string notr="true">color:black</string>
      </property>
+     <property name="rowCount">
+      <number>15</number>
+     </property>
      <row>
       <property name="text">
        <string>1</string>
@@ -807,6 +817,15 @@ color:black
        <string>6</string>
       </property>
      </row>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
+     <row/>
      <column>
       <property name="text">
        <string>加热温度(℃)</string>
@@ -834,7 +853,7 @@ color:black
       <string>控温启动</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="bB_Stove_E_2">
+    <widget class="QPushButton" name="bB_Stove_E">
      <property name="geometry">
       <rect>
        <x>110</x>
@@ -1573,7 +1592,7 @@ color:black
       <string>可燃(LEL)：</string>
      </property>
     </widget>
-    <widget class="QLabel" name="l_TEMWater">
+    <widget class="QLabel" name="l_WWet">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -1589,7 +1608,26 @@ color:black
       </font>
      </property>
      <property name="text">
-      <string>水箱温度(℃)：</string>
+      <string>加湿器温度(℃)：</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="l_ETrop">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>120</y>
+       <width>181</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>黑体</family>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>伴热带温度(℃)：</string>
      </property>
     </widget>
    </widget>
@@ -2071,7 +2109,8 @@ color:black
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">image:url(:/images/tube21.png)</string>
+     <string notr="true">image:url(:/images/tube21.png)
+</string>
     </property>
     <property name="text">
      <string/>
@@ -2887,11 +2926,22 @@ color:black
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">border-image:url(:/images/gate1.png)
+     <string notr="true">QPushButton
+{
+border-image:url(:/images/gate1.png)
+}
+QPushButton:checked
+{
+border-image:url(:/images/gate2.png)
+}
+
 </string>
     </property>
     <property name="text">
      <string/>
+    </property>
+    <property name="checkable">
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QPushButton" name="pB_ManualCO">
@@ -2904,10 +2954,21 @@ color:black
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">border-image:url(:/images/gate1.png)</string>
+     <string notr="true">QPushButton
+{
+border-image:url(:/images/gate1.png)
+}
+QPushButton:checked
+{
+border-image:url(:/images/gate2.png)
+}
+</string>
     </property>
     <property name="text">
      <string/>
+    </property>
+    <property name="checkable">
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QPushButton" name="pB_ManualCH4">
@@ -2920,10 +2981,21 @@ color:black
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">border-image:url(:/images/gate1.png)</string>
+     <string notr="true">QPushButton
+{
+border-image:url(:/images/gate1.png)
+}
+QPushButton:checked
+{
+border-image:url(:/images/gate2.png)
+}
+</string>
     </property>
     <property name="text">
      <string/>
+    </property>
+    <property name="checkable">
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QPushButton" name="pB_ManualCO2">
@@ -2936,10 +3008,21 @@ color:black
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">border-image:url(:/images/gate1.png)</string>
+     <string notr="true">QPushButton
+{
+border-image:url(:/images/gate1.png)
+}
+QPushButton:checked
+{
+border-image:url(:/images/gate2.png)
+}
+</string>
     </property>
     <property name="text">
      <string/>
+    </property>
+    <property name="checkable">
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QPushButton" name="pB_ManualN2">
@@ -2952,10 +3035,21 @@ color:black
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">border-image:url(:/images/gate1.png)</string>
+     <string notr="true">QPushButton
+{
+border-image:url(:/images/gate1.png)
+}
+QPushButton:checked
+{
+border-image:url(:/images/gate2.png)
+}
+</string>
     </property>
     <property name="text">
      <string/>
+    </property>
+    <property name="checkable">
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QPushButton" name="pB_ManualAIR">
@@ -2968,10 +3062,21 @@ color:black
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">border-image:url(:/images/gate1.png)</string>
+     <string notr="true">QPushButton
+{
+border-image:url(:/images/gate1.png)
+}
+QPushButton:checked
+{
+border-image:url(:/images/gate2.png)
+}
+</string>
     </property>
     <property name="text">
      <string/>
+    </property>
+    <property name="checkable">
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QLabel" name="l_H2Dis">
@@ -3120,7 +3225,6 @@ color:black
    <zorder>label_slpm2</zorder>
    <zorder>label_slpm1</zorder>
    <zorder>label_slpm6</zorder>
-   <zorder>pB_ManualH2</zorder>
    <zorder>pB_ManualCO</zorder>
    <zorder>pB_ManualCH4</zorder>
    <zorder>pB_ManualCO2</zorder>
@@ -3132,6 +3236,7 @@ color:black
    <zorder>l_CO2Dis</zorder>
    <zorder>l_N2Dis</zorder>
    <zorder>l_AirDis</zorder>
+   <zorder>pB_ManualH2</zorder>
   </widget>
   <widget class="QLabel" name="label_copyright">
    <property name="geometry">
@@ -3341,6 +3446,28 @@ color:black
     <string>帮助</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="act_Config">
+   <property name="geometry">
+    <rect>
+     <x>290</x>
+     <y>10</y>
+     <width>81</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="toolTip">
+    <string>配置设置</string>
+   </property>
+   <property name="statusTip">
+    <string/>
+   </property>
+   <property name="text">
+    <string>配置设置</string>
+   </property>
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+  </widget>
   <zorder>gB_map</zorder>
   <zorder>gB_DataDisplay</zorder>
   <zorder>gB_DataPara</zorder>
@@ -3357,7 +3484,15 @@ color:black
   <zorder>act_mfc_info</zorder>
   <zorder>gB_other</zorder>
   <zorder>act_Help</zorder>
+  <zorder>act_Config</zorder>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>QMyChartView</class>
+   <extends>QGraphicsView</extends>
+   <header>mychartview.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="res.qrc"/>
  </resources>

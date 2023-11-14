@@ -40,9 +40,9 @@ class Ui_SOCExpPlatform(object):
         self.gB_DataPara.setGeometry(QtCore.QRect(1350, 60, 81, 271))
         self.gB_DataPara.setStyleSheet("color:white")
         self.gB_DataPara.setObjectName("gB_DataPara")
-        self.checkBox = QtWidgets.QCheckBox(self.gB_DataPara)
-        self.checkBox.setGeometry(QtCore.QRect(0, 20, 71, 16))
-        self.checkBox.setObjectName("checkBox")
+        self.cB_DischargeH2 = QtWidgets.QCheckBox(self.gB_DataPara)
+        self.cB_DischargeH2.setGeometry(QtCore.QRect(0, 20, 71, 16))
+        self.cB_DischargeH2.setObjectName("cB_DischargeH2")
         self.cB_DischargeCH4 = QtWidgets.QCheckBox(self.gB_DataPara)
         self.cB_DischargeCH4.setGeometry(QtCore.QRect(0, 40, 71, 16))
         self.cB_DischargeCH4.setObjectName("cB_DischargeCH4")
@@ -80,7 +80,7 @@ class Ui_SOCExpPlatform(object):
         self.gB_DataDisplay.setGeometry(QtCore.QRect(950, 60, 391, 331))
         self.gB_DataDisplay.setStyleSheet("color:white")
         self.gB_DataDisplay.setObjectName("gB_DataDisplay")
-        self.gV_DataDisplay = QtWidgets.QGraphicsView(self.gB_DataDisplay)
+        self.gV_DataDisplay = QMyChartView(self.gB_DataDisplay)
         self.gV_DataDisplay.setGeometry(QtCore.QRect(0, 20, 371, 291))
         self.gV_DataDisplay.setObjectName("gV_DataDisplay")
         self.gB_parameter = QtWidgets.QGroupBox(SOCExpPlatform)
@@ -179,9 +179,9 @@ class Ui_SOCExpPlatform(object):
         self.tV_Dischagre = QtWidgets.QTableWidget(self.gB_ADisCharge)
         self.tV_Dischagre.setGeometry(QtCore.QRect(10, 20, 561, 81))
         self.tV_Dischagre.setStyleSheet("color:black")
+        self.tV_Dischagre.setRowCount(4)
         self.tV_Dischagre.setObjectName("tV_Dischagre")
         self.tV_Dischagre.setColumnCount(11)
-        self.tV_Dischagre.setRowCount(0)
         item = QtWidgets.QTableWidgetItem()
         self.tV_Dischagre.setHorizontalHeaderItem(0, item)
         item = QtWidgets.QTableWidgetItem()
@@ -208,19 +208,19 @@ class Ui_SOCExpPlatform(object):
         self.bB_Discharge_S.setGeometry(QtCore.QRect(140, 100, 91, 23))
         self.bB_Discharge_S.setStyleSheet("color:black")
         self.bB_Discharge_S.setObjectName("bB_Discharge_S")
-        self.bB_Stove_E = QtWidgets.QPushButton(self.gB_ADisCharge)
-        self.bB_Stove_E.setGeometry(QtCore.QRect(330, 100, 91, 23))
-        self.bB_Stove_E.setStyleSheet("color:black")
-        self.bB_Stove_E.setObjectName("bB_Stove_E")
+        self.bB_Discharge_E = QtWidgets.QPushButton(self.gB_ADisCharge)
+        self.bB_Discharge_E.setGeometry(QtCore.QRect(330, 100, 91, 23))
+        self.bB_Discharge_E.setStyleSheet("color:black")
+        self.bB_Discharge_E.setObjectName("bB_Discharge_E")
         self.gB_Heating = QtWidgets.QGroupBox(self.gB_parameter)
         self.gB_Heating.setGeometry(QtCore.QRect(120, 140, 211, 231))
         self.gB_Heating.setObjectName("gB_Heating")
         self.tV_Stove = QtWidgets.QTableWidget(self.gB_Heating)
         self.tV_Stove.setGeometry(QtCore.QRect(10, 20, 191, 111))
         self.tV_Stove.setStyleSheet("color:black")
+        self.tV_Stove.setRowCount(15)
         self.tV_Stove.setObjectName("tV_Stove")
         self.tV_Stove.setColumnCount(2)
-        self.tV_Stove.setRowCount(6)
         item = QtWidgets.QTableWidgetItem()
         self.tV_Stove.setVerticalHeaderItem(0, item)
         item = QtWidgets.QTableWidgetItem()
@@ -241,10 +241,10 @@ class Ui_SOCExpPlatform(object):
         self.bB_Stove_S.setGeometry(QtCore.QRect(20, 190, 75, 23))
         self.bB_Stove_S.setStyleSheet("color:black")
         self.bB_Stove_S.setObjectName("bB_Stove_S")
-        self.bB_Stove_E_2 = QtWidgets.QPushButton(self.gB_Heating)
-        self.bB_Stove_E_2.setGeometry(QtCore.QRect(110, 190, 75, 23))
-        self.bB_Stove_E_2.setStyleSheet("color:black")
-        self.bB_Stove_E_2.setObjectName("bB_Stove_E_2")
+        self.bB_Stove_E = QtWidgets.QPushButton(self.gB_Heating)
+        self.bB_Stove_E.setGeometry(QtCore.QRect(110, 190, 75, 23))
+        self.bB_Stove_E.setStyleSheet("color:black")
+        self.bB_Stove_E.setObjectName("bB_Stove_E")
         self.sB_StoveStart = QtWidgets.QSpinBox(self.gB_Heating)
         self.sB_StoveStart.setGeometry(QtCore.QRect(110, 150, 61, 21))
         self.sB_StoveStart.setStyleSheet("color:black")
@@ -452,13 +452,20 @@ class Ui_SOCExpPlatform(object):
         font.setPointSize(10)
         self.l_GasDis.setFont(font)
         self.l_GasDis.setObjectName("l_GasDis")
-        self.l_TEMWater = QtWidgets.QLabel(self.gB_WorkingInfo)
-        self.l_TEMWater.setGeometry(QtCore.QRect(10, 100, 181, 16))
+        self.l_WWet = QtWidgets.QLabel(self.gB_WorkingInfo)
+        self.l_WWet.setGeometry(QtCore.QRect(10, 100, 181, 16))
         font = QtGui.QFont()
         font.setFamily("黑体")
         font.setPointSize(10)
-        self.l_TEMWater.setFont(font)
-        self.l_TEMWater.setObjectName("l_TEMWater")
+        self.l_WWet.setFont(font)
+        self.l_WWet.setObjectName("l_WWet")
+        self.l_ETrop = QtWidgets.QLabel(self.gB_WorkingInfo)
+        self.l_ETrop.setGeometry(QtCore.QRect(10, 120, 181, 16))
+        font = QtGui.QFont()
+        font.setFamily("黑体")
+        font.setPointSize(10)
+        self.l_ETrop.setFont(font)
+        self.l_ETrop.setObjectName("l_ETrop")
         self.tabWidget = QtWidgets.QTabWidget(self.gB_info)
         self.tabWidget.setGeometry(QtCore.QRect(10, 180, 461, 141))
         self.tabWidget.setStyleSheet("background-color:rgba(255,255,255,0); color:black\n"
@@ -600,7 +607,8 @@ class Ui_SOCExpPlatform(object):
         self.pgB_Wet_3.setObjectName("pgB_Wet_3")
         self.pgB_Wet_2 = QtWidgets.QLabel(self.gB_map)
         self.pgB_Wet_2.setGeometry(QtCore.QRect(160, 80, 41, 71))
-        self.pgB_Wet_2.setStyleSheet("image:url(:/images/tube21.png)")
+        self.pgB_Wet_2.setStyleSheet("image:url(:/images/tube21.png)\n"
+"")
         self.pgB_Wet_2.setText("")
         self.pgB_Wet_2.setObjectName("pgB_Wet_2")
         self.pgB_Dry_4 = QtWidgets.QLabel(self.gB_map)
@@ -879,34 +887,88 @@ class Ui_SOCExpPlatform(object):
         self.label_slpm6.setObjectName("label_slpm6")
         self.pB_ManualH2 = QtWidgets.QPushButton(self.gB_map)
         self.pB_ManualH2.setGeometry(QtCore.QRect(50, 60, 31, 31))
-        self.pB_ManualH2.setStyleSheet("border-image:url(:/images/gate1.png)\n"
+        self.pB_ManualH2.setStyleSheet("QPushButton\n"
+"{\n"
+"border-image:url(:/images/gate1.png)\n"
+"}\n"
+"QPushButton:checked\n"
+"{\n"
+"border-image:url(:/images/gate2.png)\n"
+"}\n"
+"\n"
 "")
         self.pB_ManualH2.setText("")
+        self.pB_ManualH2.setCheckable(True)
         self.pB_ManualH2.setObjectName("pB_ManualH2")
         self.pB_ManualCO = QtWidgets.QPushButton(self.gB_map)
         self.pB_ManualCO.setGeometry(QtCore.QRect(50, 140, 31, 31))
-        self.pB_ManualCO.setStyleSheet("border-image:url(:/images/gate1.png)")
+        self.pB_ManualCO.setStyleSheet("QPushButton\n"
+"{\n"
+"border-image:url(:/images/gate1.png)\n"
+"}\n"
+"QPushButton:checked\n"
+"{\n"
+"border-image:url(:/images/gate2.png)\n"
+"}\n"
+"")
         self.pB_ManualCO.setText("")
+        self.pB_ManualCO.setCheckable(True)
         self.pB_ManualCO.setObjectName("pB_ManualCO")
         self.pB_ManualCH4 = QtWidgets.QPushButton(self.gB_map)
         self.pB_ManualCH4.setGeometry(QtCore.QRect(50, 230, 31, 31))
-        self.pB_ManualCH4.setStyleSheet("border-image:url(:/images/gate1.png)")
+        self.pB_ManualCH4.setStyleSheet("QPushButton\n"
+"{\n"
+"border-image:url(:/images/gate1.png)\n"
+"}\n"
+"QPushButton:checked\n"
+"{\n"
+"border-image:url(:/images/gate2.png)\n"
+"}\n"
+"")
         self.pB_ManualCH4.setText("")
+        self.pB_ManualCH4.setCheckable(True)
         self.pB_ManualCH4.setObjectName("pB_ManualCH4")
         self.pB_ManualCO2 = QtWidgets.QPushButton(self.gB_map)
         self.pB_ManualCO2.setGeometry(QtCore.QRect(50, 320, 31, 31))
-        self.pB_ManualCO2.setStyleSheet("border-image:url(:/images/gate1.png)")
+        self.pB_ManualCO2.setStyleSheet("QPushButton\n"
+"{\n"
+"border-image:url(:/images/gate1.png)\n"
+"}\n"
+"QPushButton:checked\n"
+"{\n"
+"border-image:url(:/images/gate2.png)\n"
+"}\n"
+"")
         self.pB_ManualCO2.setText("")
+        self.pB_ManualCO2.setCheckable(True)
         self.pB_ManualCO2.setObjectName("pB_ManualCO2")
         self.pB_ManualN2 = QtWidgets.QPushButton(self.gB_map)
         self.pB_ManualN2.setGeometry(QtCore.QRect(50, 410, 31, 31))
-        self.pB_ManualN2.setStyleSheet("border-image:url(:/images/gate1.png)")
+        self.pB_ManualN2.setStyleSheet("QPushButton\n"
+"{\n"
+"border-image:url(:/images/gate1.png)\n"
+"}\n"
+"QPushButton:checked\n"
+"{\n"
+"border-image:url(:/images/gate2.png)\n"
+"}\n"
+"")
         self.pB_ManualN2.setText("")
+        self.pB_ManualN2.setCheckable(True)
         self.pB_ManualN2.setObjectName("pB_ManualN2")
         self.pB_ManualAIR = QtWidgets.QPushButton(self.gB_map)
         self.pB_ManualAIR.setGeometry(QtCore.QRect(50, 510, 31, 31))
-        self.pB_ManualAIR.setStyleSheet("border-image:url(:/images/gate1.png)")
+        self.pB_ManualAIR.setStyleSheet("QPushButton\n"
+"{\n"
+"border-image:url(:/images/gate1.png)\n"
+"}\n"
+"QPushButton:checked\n"
+"{\n"
+"border-image:url(:/images/gate2.png)\n"
+"}\n"
+"")
         self.pB_ManualAIR.setText("")
+        self.pB_ManualAIR.setCheckable(True)
         self.pB_ManualAIR.setObjectName("pB_ManualAIR")
         self.l_H2Dis = QtWidgets.QLabel(self.gB_map)
         self.l_H2Dis.setGeometry(QtCore.QRect(80, 90, 31, 16))
@@ -994,7 +1056,6 @@ class Ui_SOCExpPlatform(object):
         self.label_slpm2.raise_()
         self.label_slpm1.raise_()
         self.label_slpm6.raise_()
-        self.pB_ManualH2.raise_()
         self.pB_ManualCO.raise_()
         self.pB_ManualCH4.raise_()
         self.pB_ManualCO2.raise_()
@@ -1006,6 +1067,7 @@ class Ui_SOCExpPlatform(object):
         self.l_CO2Dis.raise_()
         self.l_N2Dis.raise_()
         self.l_AirDis.raise_()
+        self.pB_ManualH2.raise_()
         self.label_copyright = QtWidgets.QLabel(SOCExpPlatform)
         self.label_copyright.setGeometry(QtCore.QRect(30, 740, 1391, 16))
         self.label_copyright.setStyleSheet("color:white")
@@ -1088,7 +1150,7 @@ class Ui_SOCExpPlatform(object):
         self.act_Quit.setToolTip(_translate("SOCExpPlatform", "退出系统"))
         self.act_Quit.setText(_translate("SOCExpPlatform", "退出系统"))
         self.gB_DataPara.setTitle(_translate("SOCExpPlatform", "参数显示"))
-        self.checkBox.setText(_translate("SOCExpPlatform", "H2流量"))
+        self.cB_DischargeH2.setText(_translate("SOCExpPlatform", "H2流量"))
         self.cB_DischargeCH4.setText(_translate("SOCExpPlatform", "CH4流量"))
         self.cB_DischargeAIR.setText(_translate("SOCExpPlatform", "空气流量"))
         self.cB_DischargeCURR.setText(_translate("SOCExpPlatform", "电流"))
@@ -1149,7 +1211,7 @@ class Ui_SOCExpPlatform(object):
         item = self.tV_Dischagre.horizontalHeaderItem(10)
         item.setText(_translate("SOCExpPlatform", "单位"))
         self.bB_Discharge_S.setText(_translate("SOCExpPlatform", "执行"))
-        self.bB_Stove_E.setText(_translate("SOCExpPlatform", "停止"))
+        self.bB_Discharge_E.setText(_translate("SOCExpPlatform", "停止"))
         self.gB_Heating.setTitle(_translate("SOCExpPlatform", "加热参数设置"))
         item = self.tV_Stove.verticalHeaderItem(0)
         item.setText(_translate("SOCExpPlatform", "1"))
@@ -1168,7 +1230,7 @@ class Ui_SOCExpPlatform(object):
         item = self.tV_Stove.horizontalHeaderItem(1)
         item.setText(_translate("SOCExpPlatform", "加热时间(min)"))
         self.bB_Stove_S.setText(_translate("SOCExpPlatform", "控温启动"))
-        self.bB_Stove_E_2.setText(_translate("SOCExpPlatform", "控温停止"))
+        self.bB_Stove_E.setText(_translate("SOCExpPlatform", "控温停止"))
         self.label_StoveStart.setText(_translate("SOCExpPlatform", "起始程序段："))
         self.label_PreDis.setTitle(_translate("SOCExpPlatform", "电缸加压设置"))
         self.l_SetPressure.setText(_translate("SOCExpPlatform", "压力设定(N)"))
@@ -1205,7 +1267,8 @@ class Ui_SOCExpPlatform(object):
         self.l_TEMDis.setText(_translate("SOCExpPlatform", "电堆温度(℃)："))
         self.l_GasPressure.setText(_translate("SOCExpPlatform", "压力(N)："))
         self.l_GasDis.setText(_translate("SOCExpPlatform", "可燃(LEL)："))
-        self.l_TEMWater.setText(_translate("SOCExpPlatform", "水箱温度(℃)："))
+        self.l_WWet.setText(_translate("SOCExpPlatform", "加湿器温度(℃)："))
+        self.l_ETrop.setText(_translate("SOCExpPlatform", "伴热带温度(℃)："))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.tab), _translate("SOCExpPlatform", "告警显示"))
         self.tabWidget.setTabToolTip(self.tabWidget.indexOf(self.tab), _translate("SOCExpPlatform", "显示操作告警"))
         item = self.tV_log.horizontalHeaderItem(0)
@@ -1271,4 +1334,5 @@ class Ui_SOCExpPlatform(object):
         self.cB_rangeChange.setText(_translate("SOCExpPlatform", "自动调量程"))
         self.act_Help.setToolTip(_translate("SOCExpPlatform", "打开帮助文档"))
         self.act_Help.setText(_translate("SOCExpPlatform", "帮助"))
+from mychartview import QMyChartView
 import res_rc
