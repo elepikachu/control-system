@@ -21,6 +21,21 @@ from datetime import datetime
 import SOCExpPlatform, MFCSetting, BatteryInfo, help
 
 
+class RunThread(QThread):
+    _signal = pyqtSignal(str)
+
+    def __init__(self, master_):
+        super().__init__()
+        self.master = master_
+
+    def run(self):
+        try:
+            self.master.write('MEAS:CURR?;:MEAS:VOLT?;:MEAS:POW?')
+            data = self.master.read()
+            self._signal.emit(data)
+        except:
+            print('Visa Error')
+
 # -------------------------------------------------------------
 # 类名： SOCExpPlatform001
 # 功能：主窗口
@@ -30,8 +45,12 @@ class SOCExpPlatform001(QWidget):
         super().__init__(parent)
         self.ui = SOCExpPlatform.Ui_SOCExpPlatform()
         self.ui.setupUi(self)
-        self.ui.alarmBox.setText('<font color="blue">原神 启动</font>')
+        self.ui.alarmBox.setText('<font color="blue">原神——启动！</font>')
         self.plc_flag = 0
+        self.batteryNO = '未设置'
+        self.unitBattery = 8
+        self.unitBatteryPack = 8
+        self.batteryArea = 60
         self.circle_time = self.ui.sB_SetScanCircle.value()
         self._SOCExpPlatform001__initBarChart()
         self.initPLCConnect()
@@ -54,6 +73,8 @@ class SOCExpPlatform001(QWidget):
         self.StoveHeatTime.timeout.connect(self.StoveHeating)
         self.timer = QTimer()
         self.timer.timeout.connect(self.drawChart)
+        self.itemModel_Stove = QStandardItemModel(0, 2, self)
+        self.selectionModel_Stove = QItemSelectionModel(self.itemModel_Stove)
 
     # -------------------------------------------------------------
     # 函数名： buttonConnect
@@ -77,6 +98,14 @@ class SOCExpPlatform001(QWidget):
         self.ui.act_Silent.clicked.connect(self.silentMode)
         self.ui.act_mfc_info.clicked.connect(self.mfcWindow)
         self.ui.act_baterry_info.clicked.connect(self.batteryWindow)
+        self.ui.rB_auto.clicked.connect(self.radioButtonClicked)
+        self.ui.rB_manu.clicked.connect(self.radioButtonClicked)
+        self.ui.rB_dis.clicked.connect(self.manuModeRbClicked)
+        self.ui.rB_ch.clicked.connect(self.manuModeRbClicked)
+        self.ui.rB_CC.clicked.connect(self.manuTypeRbClicked)
+        self.ui.rB_CV.clicked.connect(self.manuTypeRbClicked)
+        self.ui.rB_CP.clicked.connect(self.manuTypeRbClicked)
+        self.ui.dSB_ManualData.valueChanged.connect(self.dSB_ManualDataChanged)
 
     # -------------------------------------------------------------
     # 函数名： initPlcConnect
@@ -266,8 +295,9 @@ class SOCExpPlatform001(QWidget):
             self.ui.l_ElcLoad.setText('连接成功')
             self.ui.alarmBox.append('<font color="blue">PLC连接成功</font>')
             self.ui.pB_PLCConnection.setText('断开PLC')
+            self.plc_flag = True
             self.timer.start(100)
-        except:
+        except Exception as e:
             print('Fail to Connect PLC')
             self.ui.alarmBox.append('<font color="red">PLC连接失败！请检查PLC</font>')
             self.ui.alarmBox.append(str(e))
@@ -283,8 +313,9 @@ class SOCExpPlatform001(QWidget):
             self.ui.l_ElcLoad.setText('未连接')
             self.ui.alarmBox.append('<font color="blue">PLC断开成功</font>')
             self.ui.pB_PLCConnection.setText('连接PLC')
+            self.plc_flag = False
             self.timer.stop()
-        except:
+        except Exception as e:
             print('PLC DisConnect Error')
             self.ui.alarmBox.append('<font color="red">PLC断开连接失败！请检查</font>')
             self.ui.alarmBox.append(str(e))
@@ -294,8 +325,11 @@ class SOCExpPlatform001(QWidget):
     # 功能： 开启氮气吹扫
     # -------------------------------------------------------------
     def N2Flow(self):
+        if not self.plc_flag:
+            self.ui.alarmBox.append('<font color="red">未连接plc,无法开启吹扫</font>')
+            return
         self.ui.rB_Dry.setChecked(True)
-        self.ui.alarmBox.append('Fail to Connect PLC')
+        self.ui.alarmBox.append('开启氮气吹扫成功')
         snap7.util.set_byte(self.data, 180, 1)
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
 
@@ -304,7 +338,11 @@ class SOCExpPlatform001(QWidget):
     # 功能： 停止氮气吹扫
     # -------------------------------------------------------------
     def N2NotFlow(self):
+        if not self.plc_flag:
+            self.ui.alarmBox.append('<font color="red">未连接plc,无法停止吹扫</font>')
+            return
         snap7.util.set_byte(self.data, 180, 0)
+        self.ui.alarmBox.append('已关闭氮气吹扫')
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
 
     # -------------------------------------------------------------
@@ -313,14 +351,19 @@ class SOCExpPlatform001(QWidget):
     # -------------------------------------------------------------
     @pyqtSlot()
     def on_pB_CylinderPress_released(self):
+        if not self.plc_flag:
+            self.ui.alarmBox.append('<font color="red">未连接plc,无法加压</font>')
+            return
         if self.ui.pB_CylinderPress.isChecked():
             GasPress = self.ui.dSB_PreSet.value()
             snap7.util.set_real(self.data, 200, GasPress)
-            self.ui.pB_CylinderPress.setText('加压中...')
+            self.ui.pB_CylinderPress.setText('停止加压')
+            self.ui.alarmBox.append('正在电缸加压')
             self.ui.pB_CylinderPress.setStyleSheet('color:green')
         else:
             snap7.util.set_real(self.data, 200, 0)
             self.ui.pB_CylinderPress.setText('电缸加压')
+            self.ui.alarmBox.append('已关闭电缸加压')
             self.ui.pB_CylinderPress.setStyleSheet('color:black')
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
 
@@ -329,6 +372,9 @@ class SOCExpPlatform001(QWidget):
     # 功能： 电缸加压回原位
     # -------------------------------------------------------------
     def gasPressHome(self):
+        if not self.plc_flag:
+            self.ui.alarmBox.append('<font color="red">未连接plc,操作失败</font>')
+            return
         snap7.util.set_byte(self.data, 188, 1)
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
         self.ui.bB_CylinderHome.button(QDialogButtonBox.Ok).setText('回原位中。。。。')
@@ -340,6 +386,9 @@ class SOCExpPlatform001(QWidget):
     # 功能： 电缸加压停止回原位
     # -------------------------------------------------------------
     def gasPressNotHome(self):
+        if not self.plc_flag:
+            self.ui.alarmBox.append('<font color="red">未连接plc,操作失败</font>')
+            return
         snap7.util.set_byte(self.data, 188, 0)
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
         self.ui.bB_CylinderHome.button(QDialogButtonBox.Ok).setText('回原位')
@@ -356,8 +405,8 @@ class SOCExpPlatform001(QWidget):
         self.StoveTempStart = 0
         self.StoveTime = 0
         self.ui.tV_Stove.selectRow(self.StoveHeatBuff)
-        self.ui.bB_Stove_S.button(QDialogButtonBox.Ok).setText('加热中。。。。')
-        self.ui.bB_Stove_E.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.ui.bB_Stove_S.setText('加热中。。。。')
+        self.ui.bB_Stove_S.setEnabled(False)
         self.ui.tV_Stove.setEnabled(False)
         StoveTempBuff = self.itemModel_Stove.item(self.StoveHeatBuff, 0)
         StoveTemp = float(StoveTempBuff.text())
@@ -421,10 +470,10 @@ class SOCExpPlatform001(QWidget):
         if self.filename == '':
             return
         headers = []
-        headers.append('电池信息:%s' % str(self.BatteryNO))
-        headers.append('单体电池节数:%s' % str(self.UnitBattery))
-        headers.append('电池节数:%s' % str(self.UnitBatteryPack))
-        headers.append('电池面积(cm²):%s' % str(self.Battery_Area))
+        headers.append('电池信息:%s' % str(self.batteryNO))
+        headers.append('单体电池节数:%s' % str(self.unitBattery))
+        headers.append('电池节数:%s' % str(self.unitBatteryPack))
+        headers.append('电池面积(cm²):%s' % str(self.batteryArea))
         headers1 = [
          "'日期'", "'记录时间（24小时）'", "'累计时间'", "'电流'", "'电压'",
          "'功率'", "'电流密度'", "'功率密度'", "'单体电压'", "'加压压力'", "'加热炉温度'",
@@ -489,7 +538,6 @@ class SOCExpPlatform001(QWidget):
         self.ui.l_DataSave.setText('数据未采集')
         self.ui.l_DataSave.setStyleSheet('color:white')
 
-
     # -------------------------------------------------------------
     # 函数名： on_pB_DataAnalize_clicked
     # 功能： 分析数据
@@ -553,6 +601,102 @@ class SOCExpPlatform001(QWidget):
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
         plt.show()
+
+    # -------------------------------------------------------------
+    # 函数名： radioButtonClicked
+    # 功能： 充放电选择后屏蔽另一边操作
+    # -------------------------------------------------------------
+    def radioButtonClicked(self):
+        if self.ui.rB_manu.isChecked():
+            self.ui.rB_ch.setEnabled(True)
+            self.ui.rB_dis.setEnabled(True)
+            self.ui.dSB_ManualData.setEnabled(True)
+            self.ui.bB_Manual_S.setEnabled(True)
+            self.ui.bB_Manual_E.setEnabled(True)
+            self.ui.tV_Dischagre.setEnabled(False)
+            self.ui.bB_Discharge_E.setEnabled(False)
+            self.ui.bB_Discharge_S.setEnabled(False)
+            self.ui.rB_CC.setEnabled(True)
+            self.ui.rB_CV.setEnabled(True)
+            self.ui.rB_CP.setEnabled(True)
+            self.ExDischarge.stop()
+        if self.ui.rB_auto.isChecked():
+            self.ui.rB_ch.setEnabled(False)
+            self.ui.rB_dis.setEnabled(False)
+            self.ui.dSB_ManualData.setEnabled(False)
+            self.ui.bB_Manual_S.setEnabled(False)
+            self.ui.bB_Manual_E.setEnabled(False)
+            self.ui.tV_Dischagre.setEnabled(True)
+            self.ui.bB_Discharge_S.setEnabled(True)
+            self.ui.bB_Discharge_E.setEnabled(True)
+            self.ui.rB_CC.setEnabled(False)
+            self.ui.rB_CV.setEnabled(False)
+            self.ui.rB_CP.setEnabled(False)
+            self.DisChargeTime.stop()
+            if self.ui.pB_DisCharger.text() == '断开电子负载':
+                self.res.write('INP OFF')
+            if self.ui.pB_Charger.text() == '断开直流电源':
+                self.res.write('OUTP OFF')
+
+    def manuModeRbClicked(self):
+        if self.ui.rB_dis.isChecked():
+            snap7.util.set_byte(self.data, 214, 1)
+            self.ui.pB_DisCharger.setEnabled(False)
+            self.ui.pB_Charger.setEnabled(True)
+            self.ui.pB_DisCharger.setChecked(False)
+            self.ui.pB_Charger.setChecked(False)
+            self.ui.l_Connect_Dis.setText('未连接负载')
+            self.ui.l_Connect_Dis.setStyleSheet('color:black')
+            self.ui.pB_DisCharger.setText('连接电子负载')
+            self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
+        elif self.ui.rB_ch.isChecked():
+            snap7.util.set_byte(self.data, 214, 0)
+            self.ui.pB_DisCharger.setEnabled(True)
+            self.ui.pB_Charger.setEnabled(False)
+            self.ui.pB_DisCharger.setChecked(False)
+            self.ui.pB_Charger.setChecked(False)
+            self.ui.l_Connect_Ch.setText('未连接电源')
+            self.ui.l_Connect_Ch.setStyleSheet('color:black')
+            self.ui.pB_Charger.setText('连接直流电源')
+            self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
+
+    def manuTypeRbClicked(self):
+        if self.ui.rB_CC.isChecked():
+            self.ui.l_WorkMode.setText('电流(A):')
+            if self.ui.pB_DisCharger.text() == '断开电子负载':
+                self.res.write('FUNC CURR')
+            data = self.ui.dSB_ManualData.value()
+            self.res.write('CURR %f' % data)
+        elif self.ui.rB_CV.isChecked():
+            self.ui.l_WorkMode.setText('电压(V):')
+            if self.ui.pB_DisCharger.text() == '断开电子负载':
+                self.res.write('FUNC VOLT')
+            data = self.ui.dSB_ManualData.value()
+            self.res.write('VOLT %f' % data)
+        elif self.ui.rB_CP.isChecked():
+            self.ui.l_WorkMode.setText('功率(P):')
+            if self.ui.pB_DisCharger.text() == '断开电子负载':
+                self.res.write('FUNC POW')
+            data = self.ui.dSB_ManualData.value()
+            self.res.write('POW %f' % data)
+
+    def dSB_ManualDataChanged(self):
+        if self.ui.rB_CC.isChecked():
+            if self.ui.pB_DisCharger.text() == '断开电子负载':
+                self.res.write('FUNC CURR')
+            data = self.ui.dSB_ManualData.value()
+            self.res.write('CURR %f' % data)
+        elif self.ui.rB_CV.isChecked():
+            if self.ui.pB_DisCharger.text() == '断开电子负载':
+                self.res.write('FUNC VOLT')
+            data = self.ui.dSB_ManualData.value()
+            self.res.write('VOLT %f' % data)
+        elif self.ui.rB_CP.isChecked():
+                if self.ui.pB_DisCharger.text() == '断开电子负载':
+                    self.res.write('FUNC POW')
+                data = self.ui.dSB_ManualData.value()
+                self.res.write('POW %f' % data)
+
 
     # -------------------------------------------------------------
     # 函数名： disChargeManualStart
@@ -629,6 +773,117 @@ class SOCExpPlatform001(QWidget):
             self.res.write('OUTP OFF')
         self.ExDischarge.stop()
         self.ui.tV_Dischagre.setEnabled(True)
+
+    @pyqtSlot()
+    def on_pB_DisCharger_released(self):
+        if self.ui.pB_DisCharger.isChecked():
+            try:
+                self.rm = visa.ResourceManager()
+                self.res = self.rm.open_resource('ASRL2::INSTR')
+                print(type(self.res))
+                self.Thread = RunThread(self.res)
+                self.Thread._signal.connect(self.ReadDisCharge)
+                self.res.write('*IDN?')
+                read = self.res.read()
+                readList = read.split(',')
+                self.ui.l_Connect_Dis.setText(readList[1])
+                self.ui.l_Connect_Dis.setStyleSheet('color:green')
+                self.res.write('SYST:REM')
+                self.res.write('SYST:SENS ON')
+                self.ui.pB_DisCharger.setText('断开电子负载')
+            except:
+                self.ui.alarmBox.append('<font color="red">无法连接电子负载，请检查</font>')
+
+        else:
+            self.ui.pB_DisCharger.setText('连接电子负载')
+            self.ui.l_Connect_Dis.setStyleSheet('color:black')
+            self.ui.l_Connect_Dis.setText('未连接负载')
+
+    @pyqtSlot()
+    def on_pB_Charger_released(self):
+        if self.ui.pB_Charger.isChecked():
+            try:
+                self.rm = visa.ResourceManager()
+                self.res = self.rm.open_resource('ASRL3::INSTR')
+                print(type(self.res))
+                self.Thread_Ch = RunThread(self.res)
+                self.Thread_Ch._signal.connect(self.readCharge)
+                self.res.write('*IDN?')
+                read = self.res.read()
+                readList = read.split(',')
+                self.ui.l_Connect_Ch.setText(readList[1])
+                self.ui.l_Connect_Ch.setStyleSheet('color:green')
+                self.res.write('SYST:REM')
+                self.ui.pB_Charger.setText('断开直流电源')
+            except:
+                self.ui.alarmBox.append('<font color="red">无法连接直流电源，请检查</font>')
+
+        else:
+            self.ui.pB_Charger.setText('连接直流电源')
+            self.ui.l_Connect_Ch.setStyleSheet('color:black')
+            self.ui.l_Connect_Ch.setText('未连接电源')
+
+    # -------------------------------------------------------------
+    # 函数名： readDisCharge
+    # 功能： 实时读取放电信息
+    # -------------------------------------------------------------
+    def readDisCharge(self, data):
+        self.dataList = data.split(';')
+        try:
+            Cur = float(self.dataList[0])
+            Vlot = float(self.dataList[1])
+            CURRD = float(self.dataList[0]) * 1000 / self.Battery_Area
+            POWD = float(self.dataList[2]) * 1000 / self.Battery_Area
+            if Cur > 0.1:
+                self.ui.l_CURRDis.setText('电流(A):%s' % self.dataList[0])
+            else:
+                self.ui.l_CURRDis.setText('电流(A):0.0')
+                CURRD = 0
+            if Vlot > 0.1:
+                self.ui.l_VOLTDis.setText('电压(V):%s' % self.dataList[1])
+            else:
+                Temp = 0
+                self.ui.l_VOLTDis.setText('电压(V):%s' % Temp)
+            if POWD > 0.0:
+                self.ui.l_POWDis.setText('功率(W):%s' % self.dataList[2])
+            else:
+                Temp = 0
+                self.ui.l_POWDis.setText('功率(W):%s' % Temp)
+            self.ui.l_CURRDensityDis.setText('电密（mA/cm²):%.2f' % CURRD)
+            self.ui.l_POWDensityDis.setText('功密（mW/cm²):%.2f' % POWD)
+        except:
+            print('String To Float Error')
+
+    # -------------------------------------------------------------
+    # 函数名： ReadCharge
+    # 功能： 实时读取充电信息
+    # -------------------------------------------------------------
+    def readCharge(self, data):
+        self.dataList = data.split(';')
+        try:
+            Cur = float(self.dataList[0])
+            Vlot = float(self.dataList[1])
+            CURRD = float(self.dataList[0]) * 1000 / self.Battery_Area
+            POWD = float(self.dataList[2]) * 1000 / self.Battery_Area
+            if Cur > 0.1:
+                self.ui.l_CURRDis.setText('电流(A):%s' % self.dataList[0])
+            else:
+                self.ui.l_CURRDis.setText('电流(A):0.0')
+                CURRD = 0
+            if Vlot > 0.1:
+                self.ui.l_VOLTDis.setText('电压(V):%s' % self.dataList[1])
+            else:
+                Temp = 0
+                self.ui.l_VOLTDis.setText('电压(V):%s' % Temp)
+            if POWD > 0.0:
+                self.ui.l_POWDis.setText('功率(W):%s' % self.dataList[2])
+            else:
+                Temp = 0
+                self.ui.l_POWDis.setText('功率(W):%s' % Temp)
+            self.ui.l_CURRDensityDis.setText('电密（mA/cm²):%.2f' % CURRD)
+            self.ui.l_POWDensityDis.setText('功密（mW/cm²):%.2f' % POWD)
+        except:
+            print('String To Float Error')
 
     # -------------------------------------------------------------
     # 函数名： on_cB_DiachargeH2_clicked
@@ -870,7 +1125,12 @@ class SOCExpPlatform001(QWidget):
     # -------------------------------------------------------------
     def batteryWindow(self):
         self.window4 = BatteryWindow()
-        self.window4.show()
+        self.window4.initBatteryInfo(self.batteryNO, self.unitBattery, self.unitBatteryPack, self.batteryArea)
+        #self.window4.show()
+        ret = self.window4.exec()
+        if ret == QDialog.Accepted:
+            self.batteryNO, self.unitBattery, self.unitBatteryPack, self.batteryArea = self.window4.setBatteryInfo()
+            self.ui.l_batteryNO.setText("电池编号：" + self.batteryNO)
 
 
 # -------------------------------------------------------------
@@ -908,11 +1168,43 @@ class MFCWindow(QWidget):
 # 类名： BatteryWindow
 # 功能：电池信息设置窗口
 # -------------------------------------------------------------
-class BatteryWindow(QWidget):
-    def __init__(self, parent=None):
+class BatteryWindow(QDialog):
+    def __init__(self, bn='', ub=8, ubp=8, ba=60, parent=None):
         super().__init__(parent)
         self.ui = BatteryInfo.Ui_batteryInfo()
         self.ui.setupUi(self)
+        self.initBatteryInfo(bn, ub, ubp, ba)
+        self.ui.Pb_OKBI.clicked.connect(self.setBatteryInfo)
+
+
+    def initBatteryInfo(self, batteryNo, unitBattery, unitBatteryPack, batteryArea):
+        # self.batteryNo = batteryNo
+        # self.unitBattery = unitBattery
+        # self.unitBatteryPack = unitBatteryPack
+        # self.batteryArea = batteryArea
+        self.ui.l_BatteryNO.setText("电池编号：" + batteryNo)
+        if batteryNo is not '未设置':
+            self.ui.lE_BatteryNO.setText(batteryNo)
+        self.ui.l_BatteryUnit.setText("电池节数：" + str(unitBattery))
+        self.ui.sB_UnitBattery.setValue(unitBattery)
+        self.ui.l_BatteryPack.setText("电池片数：" + str(unitBatteryPack))
+        self.ui.sB_UnitBatteryPack.setValue(unitBatteryPack)
+        self.ui.l_BatteryArea.setText("电池面积：" + str(batteryArea))
+        self.ui.dSB_Battery_Area.setValue(batteryArea)
+
+    def setBatteryInfo(self):
+        # signal_list = pyqtSignal(str, int, int, int)
+        if self.ui.lE_BatteryNO.text == '':
+            reply = QMessageBox.question(self, "Alarm", "电池编号为空，确认继续么？", QMessageBox.Yes | QMessageBox.No)
+            if reply == QMessageBox.No:
+                return
+        batteryNo = self.ui.lE_BatteryNO.text()
+        unitBattery = self.ui.sB_UnitBattery.value()
+        unitBatteryPack = self.ui.sB_UnitBatteryPack.value()
+        batteryArea = self.ui.dSB_Battery_Area.value()
+        self.accept()
+        return (
+            batteryNo, unitBattery, unitBatteryPack, batteryArea)
 
 
 if __name__ == '__main__':

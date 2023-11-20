@@ -438,7 +438,7 @@ color:black
        <string>手动模式</string>
       </property>
      </widget>
-     <widget class="QRadioButton" name="Rb_auto">
+     <widget class="QRadioButton" name="rB_auto">
       <property name="geometry">
        <rect>
         <x>140</x>
@@ -515,7 +515,7 @@ color:black
        <number>1</number>
       </property>
      </widget>
-     <widget class="QLabel" name="l_DisCurrent">
+     <widget class="QLabel" name="l_WorkMode">
       <property name="geometry">
        <rect>
         <x>320</x>
@@ -1412,7 +1412,7 @@ color:black
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>20</y>
+       <y>40</y>
        <width>191</width>
        <height>16</height>
       </rect>
@@ -1431,7 +1431,7 @@ color:black
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>40</y>
+       <y>60</y>
        <width>171</width>
        <height>16</height>
       </rect>
@@ -1450,7 +1450,7 @@ color:black
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>60</y>
+       <y>80</y>
        <width>191</width>
        <height>16</height>
       </rect>
@@ -1469,7 +1469,7 @@ color:black
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>80</y>
+       <y>100</y>
        <width>191</width>
        <height>16</height>
       </rect>
@@ -1488,7 +1488,7 @@ color:black
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>100</y>
+       <y>120</y>
        <width>191</width>
        <height>21</height>
       </rect>
@@ -1501,6 +1501,25 @@ color:black
      </property>
      <property name="text">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;功密(mW/cm&lt;span style=&quot; vertical-align:super;&quot;&gt;2&lt;/span&gt;):&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="l_batteryNO">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>20</y>
+       <width>191</width>
+       <height>16</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>黑体</family>
+       <pointsize>10</pointsize>
+      </font>
+     </property>
+     <property name="text">
+      <string>电池编号：</string>
      </property>
     </widget>
    </widget>
