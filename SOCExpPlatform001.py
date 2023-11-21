@@ -5,20 +5,27 @@
 # 2023/11/13
 # -------------------------------------------------------------
 
-import sys, os, csv, random, time, snap7, json
-
-from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, QDir, Qt, QDateTime, QTimer, QItemSelectionModel, QThread
-from PyQt5.QtWidgets import QApplication, QMainWindow, QLabel, QFileDialog, QMessageBox, QWidget, QSizePolicy, QDialogButtonBox, QDialog, QAbstractItemView, QMenu, QSpinBox
-from PyQt5.QtChart import QChartView, QChart, QLineSeries, QValueAxis, QDateTimeAxis
-from PyQt5.QtGui import QPen, QColor, QPainter, QPixmap, QIcon, QStandardItemModel, QStandardItem
-from PyQt5.QtChart import *
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.widgets import CheckButtons
-import pyvisa as visa
+import csv
+import json
+import os
+import snap7
+import sys
 from datetime import datetime
-import SOCExpPlatform, MFCSetting, BatteryInfo, help
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pyvisa as visa
+from PyQt5 import QtWidgets, QtGui
+from PyQt5.QtChart import *
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QDateTime, QTimer, QThread
+from PyQt5.QtGui import QPainter, QIcon
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QDialogButtonBox, QDialog, QTableWidgetItem
+from matplotlib.widgets import CheckButtons
+
+import BatteryInfo
+import MFCSetting
+import SOCExpPlatform
+import help
 
 
 class RunThread(QThread):
@@ -36,6 +43,7 @@ class RunThread(QThread):
         except:
             print('Visa Error')
 
+
 # -------------------------------------------------------------
 # 类名： SOCExpPlatform001
 # 功能：主窗口
@@ -45,18 +53,44 @@ class SOCExpPlatform001(QWidget):
         super().__init__(parent)
         self.ui = SOCExpPlatform.Ui_SOCExpPlatform()
         self.ui.setupUi(self)
-        self.ui.alarmBox.setText('<font color="blue">原神——启动！</font>')
+        self.ui.alarmBox.setText('<font color="blue">测试平台启动！</font>')
         self.plc_flag = 0
         self.batteryNO = '未设置'
         self.unitBattery = 8
         self.unitBatteryPack = 8
         self.batteryArea = 60
+        self.StoveTempStart = 0
         self.circle_time = self.ui.sB_SetScanCircle.value()
         self._SOCExpPlatform001__initBarChart()
         self.initPLCConnect()
         self.plcGetValue()
         self.buttonConnect()
         self.setTimer()
+        self.readConfig()
+
+    # -------------------------------------------------------------
+    # 函数名： readConfig
+    # 功能： 读取json的配置信息
+    # -------------------------------------------------------------
+    def readConfig(self):
+        with open('config.json', encoding="utf-8") as load_f:
+            js = json.load(load_f)
+            stoveConfig = js[0]["para"]
+            stoveStart = js[0]["start"]
+            self.ui.sB_StoveStart.setValue(stoveStart)
+            rowCnt = len(stoveConfig)
+            for i in range(rowCnt):
+                item_temp = QTableWidgetItem(str(stoveConfig[i]['temp']))
+                item_time = QTableWidgetItem(str(stoveConfig[i]['time']))
+                self.ui.tV_Stove.setItem(i, 0, item_temp)
+                self.ui.tV_Stove.setItem(i, 1, item_time)
+            disConfig = js[1]["para"]
+            rowCnt2 = len(disConfig)
+            keys = list(disConfig[0])
+            print(disConfig)
+            for i in range(rowCnt2):
+                for j in range(1, 13):
+                    self.ui.tV_Discharge.setItem(i, j-1, QTableWidgetItem(str(disConfig[i][keys[j]])))
 
     # -------------------------------------------------------------
     # 函数名： setTimer
@@ -73,8 +107,6 @@ class SOCExpPlatform001(QWidget):
         self.StoveHeatTime.timeout.connect(self.StoveHeating)
         self.timer = QTimer()
         self.timer.timeout.connect(self.drawChart)
-        self.itemModel_Stove = QStandardItemModel(0, 2, self)
-        self.selectionModel_Stove = QItemSelectionModel(self.itemModel_Stove)
 
     # -------------------------------------------------------------
     # 函数名： buttonConnect
@@ -153,6 +185,30 @@ class SOCExpPlatform001(QWidget):
         self.ui.l_GasDis.setText('可燃(LEL): %.2f' % self.CGCInpout)
         self.GasPressure = snap7.util.get_real(self.data, 36)
         self.ui.l_GasPressure.setText('压力(N): %.2f' % self.GasPressure)
+        H2LimitL = snap7.util.get_real(self.data, 94)
+        self.dBB_SetMFCH2Low = H2LimitL
+        H2LimitH = snap7.util.get_real(self.data, 98)
+        self.dBB_SetMFCH2High = H2LimitH
+        CO2LimitL = snap7.util.get_real(self.data, 110)
+        self.dBB_SetMFCCO2Low = CO2LimitL
+        CO2LimitH = snap7.util.get_real(self.data, 114)
+        self.dBB_SetMFCCO2High = CO2LimitH
+        CH4LimitL = snap7.util.get_real(self.data, 102)
+        self.dBB_SetMFCCH4Low = CH4LimitL
+        CH4LimitH = snap7.util.get_real(self.data, 106)
+        self.dBB_SetMFCCH4High = CH4LimitH
+        COLimitL = snap7.util.get_real(self.data, 134)
+        self.dBB_SetMFCCOLow = COLimitL
+        COLimitH = snap7.util.get_real(self.data, 138)
+        self.dBB_SetMFCCOHigh = COLimitH
+        AirLimitL = snap7.util.get_real(self.data, 126)
+        self.dBB_SetMFCAirLow = AirLimitL
+        AirLimitH = snap7.util.get_real(self.data, 130)
+        self.dBB_SetMFCAirHigh = AirLimitH
+        N2LimitL = snap7.util.get_real(self.data, 118)
+        self.dBB_SetMFCN2Low = N2LimitL
+        N2LimitH = snap7.util.get_real(self.data, 122)
+        self.dBB_SetMFCN2High = N2LimitH
         Stove = snap7.util.get_real(self.data, 208)
         self.ui.l_TEMStove.setText('加热炉温度(℃): %.2f' % Stove)
         Wwet = snap7.util.get_real(self.data, 200)
@@ -358,7 +414,7 @@ class SOCExpPlatform001(QWidget):
             GasPress = self.ui.dSB_PreSet.value()
             snap7.util.set_real(self.data, 200, GasPress)
             self.ui.pB_CylinderPress.setText('停止加压')
-            self.ui.alarmBox.append('正在电缸加压')
+            self.ui.alarmBox.append('<font color="blue">正在电缸加压</font>')
             self.ui.pB_CylinderPress.setStyleSheet('color:green')
         else:
             snap7.util.set_real(self.data, 200, 0)
@@ -377,8 +433,8 @@ class SOCExpPlatform001(QWidget):
             return
         snap7.util.set_byte(self.data, 188, 1)
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
-        self.ui.bB_CylinderHome.button(QDialogButtonBox.Ok).setText('回原位中。。。。')
-        self.ui.bB_CylinderHome.button(QDialogButtonBox.Ok).setEnabled(False)
+        self.ui.alarmBox.append('<font color="blue">回原位中。。。。</font>')
+        self.ui.bB_CylinderHome_S.button.setEnabled(False)
         self.ui.pB_CylinderPress.setEnabled(False)
 
     # -------------------------------------------------------------
@@ -391,7 +447,7 @@ class SOCExpPlatform001(QWidget):
             return
         snap7.util.set_byte(self.data, 188, 0)
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
-        self.ui.bB_CylinderHome.button(QDialogButtonBox.Ok).setText('回原位')
+        self.ui.alarmBox.append('回原位停止')
         self.ui.bB_CylinderHome.button(QDialogButtonBox.Ok).setEnabled(True)
         self.ui.pB_CylinderPress.setEnabled(True)
 
@@ -400,17 +456,20 @@ class SOCExpPlatform001(QWidget):
     # 功能： 开始加热*
     # -------------------------------------------------------------
     def stoveHeat(self):
-        self.StoveHeatIndex = self.itemModel_Stove.rowCount()
+        # if not self.plc_flag:
+        #     self.ui.alarmBox.append('<font color="red">未连接plc,操作失败</font>')
+        #     return
+        self.StoveHeatIndex = self.ui.tV_Stove.rowCount()
         self.StoveHeatBuff = self.ui.sB_StoveStart.value() - 1
         self.StoveTempStart = 0
         self.StoveTime = 0
         self.ui.tV_Stove.selectRow(self.StoveHeatBuff)
-        self.ui.bB_Stove_S.setText('加热中。。。。')
+        self.ui.alarmBox.append('<font color="blue">正在加热</font>')
         self.ui.bB_Stove_S.setEnabled(False)
         self.ui.tV_Stove.setEnabled(False)
-        StoveTempBuff = self.itemModel_Stove.item(self.StoveHeatBuff, 0)
+        StoveTempBuff = self.ui.tV_Stove.item(self.StoveHeatBuff, 0)
         StoveTemp = float(StoveTempBuff.text())
-        StoveTempTimeBuff = self.itemModel_Stove.item(self.StoveHeatBuff, 1)
+        StoveTempTimeBuff = self.ui.tV_Stove.item(self.StoveHeatBuff, 1)
         StoveTempTime = float(StoveTempTimeBuff.text())
         CurrentTemp = snap7.util.get_real(self.data, 40)
         StoveTemp = StoveTemp - CurrentTemp
@@ -425,10 +484,13 @@ class SOCExpPlatform001(QWidget):
     # 功能： 停止加热*
     # -------------------------------------------------------------
     def stoveNotHeat(self):
+        if self.StoveTempStart == 0:
+            self.ui.alarmBox.append('<font color="red">加热未开始，无需停止</font>')
+            return
         self.StoveTempStart = 0
         self.ui.tV_Stove.setEnabled(True)
-        self.ui.bB_Stove_S.button(QDialogButtonBox.Ok).setText('控温启动')
-        self.ui.bB_Stove_E.button(QDialogButtonBox.Ok).setEnabled(True)
+        self.ui.alarmBox.append('停止加热成功')
+        self.ui.bB_Stove_S.setEnabled(True)
         snap7.util.set_real(self.data, 208, 0)
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
         self.StoveHeatTime.stop()
@@ -440,7 +502,7 @@ class SOCExpPlatform001(QWidget):
     def StoveHeating(self):
         self.StoveTime = self.StoveTime + 1
         self.ui.tV_Stove.selectRow(self.StoveHeatBuff)
-        timebuff = self.itemModel_Stove.item(self.StoveHeatBuff, 1)
+        timebuff = self.ui.tV_Stove.item(self.StoveHeatBuff, 1)
         time = int(timebuff.text())
         self.StoveTempStart = self.StoveTempStart + self.StoveMid
         if time == self.StoveTime:
@@ -449,9 +511,9 @@ class SOCExpPlatform001(QWidget):
                 self.StoveNotHeat()
             else:
                 self.StoveTime = 0
-                StoveTempBuff = self.itemModel_Stove.item(self.StoveHeatBuff, 0)
+                StoveTempBuff = self.ui.tV_Stove.item(self.StoveHeatBuff, 0)
                 StoveTemp = float(StoveTempBuff.text())
-                StoveTempTimeBuff = self.itemModel_Stove.item(self.StoveHeatBuff, 1)
+                StoveTempTimeBuff = self.ui.tV_Stove.item(self.StoveHeatBuff, 1)
                 StoveTempTime = float(StoveTempTimeBuff.text())
                 StoveMid = StoveTemp - self.StoveTempStart
                 self.StoveMid = StoveMid / StoveTempTime
@@ -696,7 +758,6 @@ class SOCExpPlatform001(QWidget):
                     self.res.write('FUNC POW')
                 data = self.ui.dSB_ManualData.value()
                 self.res.write('POW %f' % data)
-
 
     # -------------------------------------------------------------
     # 函数名： disChargeManualStart
@@ -1131,6 +1192,7 @@ class SOCExpPlatform001(QWidget):
         if ret == QDialog.Accepted:
             self.batteryNO, self.unitBattery, self.unitBatteryPack, self.batteryArea = self.window4.setBatteryInfo()
             self.ui.l_batteryNO.setText("电池编号：" + self.batteryNO)
+            self.ui.alarmBox.append("已设置电池信息，编号" + self.batteryNO)
 
 
 # -------------------------------------------------------------
@@ -1163,6 +1225,9 @@ class MFCWindow(QWidget):
         self.ui = MFCSetting.Ui_MFC_Info()
         self.ui.setupUi(self)
 
+    def initMFCWindow(self, data):
+        pass
+
 
 # -------------------------------------------------------------
 # 类名： BatteryWindow
@@ -1176,14 +1241,17 @@ class BatteryWindow(QDialog):
         self.initBatteryInfo(bn, ub, ubp, ba)
         self.ui.Pb_OKBI.clicked.connect(self.setBatteryInfo)
 
-
+    # -------------------------------------------------------------
+    # 函数名： initBatteryInfo
+    # 功能： 电池窗口初始化
+    # -------------------------------------------------------------
     def initBatteryInfo(self, batteryNo, unitBattery, unitBatteryPack, batteryArea):
         # self.batteryNo = batteryNo
         # self.unitBattery = unitBattery
         # self.unitBatteryPack = unitBatteryPack
         # self.batteryArea = batteryArea
         self.ui.l_BatteryNO.setText("电池编号：" + batteryNo)
-        if batteryNo is not '未设置':
+        if batteryNo != '未设置':
             self.ui.lE_BatteryNO.setText(batteryNo)
         self.ui.l_BatteryUnit.setText("电池节数：" + str(unitBattery))
         self.ui.sB_UnitBattery.setValue(unitBattery)
@@ -1192,6 +1260,10 @@ class BatteryWindow(QDialog):
         self.ui.l_BatteryArea.setText("电池面积：" + str(batteryArea))
         self.ui.dSB_Battery_Area.setValue(batteryArea)
 
+    # -------------------------------------------------------------
+    # 函数名： setBatteryInfo
+    # 功能： 设置电池信息
+    # -------------------------------------------------------------
     def setBatteryInfo(self):
         # signal_list = pyqtSignal(str, int, int, int)
         if self.ui.lE_BatteryNO.text == '':
