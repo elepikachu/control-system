@@ -74,7 +74,13 @@ class SOCExpPlatform001(QWidget):
     # -------------------------------------------------------------
     def readConfig(self):
         with open('config.json', encoding="utf-8") as load_f:
-            js = json.load(load_f)
+            try:
+                js = json.load(load_f)
+            except Exception as e:
+                print(e)
+                self.configResetAuto()
+                self.ui.alarmBox.append('<font color="red">配置信息读取失败，重置配置信息</font>')
+                js = json.load(load_f)
             stoveConfig = js[0]["para"]
             stoveStart = js[0]["start"]
             self.ui.sB_StoveStart.setValue(stoveStart)
@@ -87,10 +93,10 @@ class SOCExpPlatform001(QWidget):
             disConfig = js[1]["para"]
             rowCnt2 = len(disConfig)
             keys = list(disConfig[0])
-            print(disConfig)
+            print(1)
             for i in range(rowCnt2):
                 for j in range(1, 13):
-                    self.ui.tV_Discharge.setItem(i, j-1, QTableWidgetItem(str(disConfig[i][keys[j]])))
+                    self.ui.tV_Discharge.setItem(i, j - 1, QTableWidgetItem(str(disConfig[i][keys[j]])))
 
     # -------------------------------------------------------------
     # 函数名： setTimer
@@ -125,6 +131,9 @@ class SOCExpPlatform001(QWidget):
         self.ui.bB_Stove_E.clicked.connect(self.stoveNotHeat)
         self.ui.bB_Discharge_S.clicked.connect(self.excuteDischarge)
         self.ui.bB_Discharge_E.clicked.connect(self.notExDischarge)
+        self.ui.bB_StoveSave.clicked.connect(self.stoveSave)
+        self.ui.bB_Discharge_Save.clicked.connect(self.dischargeSave)
+        self.ui.act_Config.clicked.connect(self.configReset)
         self.ui.act_Help.clicked.connect(self.helpWindow)
         self.ui.act_AlarmClear.clicked.connect(self.alarmClear)
         self.ui.act_Silent.clicked.connect(self.silentMode)
@@ -289,7 +298,7 @@ class SOCExpPlatform001(QWidget):
                 tube.setStyleSheet("image:url(:/images/tube11.png)")
             else:
                 tube.setStyleSheet("image:url(:/images/tube12.png)")
-            
+
     # -------------------------------------------------------------
     # 函数名： paintEvent
     # 功能：绘制背景板
@@ -522,6 +531,29 @@ class SOCExpPlatform001(QWidget):
         print(self.StoveTempStart)
 
     # -------------------------------------------------------------
+    # 函数名： stoveSave
+    # 功能： 保存加热配置
+    # -------------------------------------------------------------
+    def stoveSave(self):
+        startVal = self.ui.sB_StoveStart.value()
+        with open('config.json', encoding="utf-8") as f:
+            js = json.load(f)
+        with open('config.json', 'w', encoding="utf-8") as f:
+            for i in range(self.ui.tV_Stove.rowCount()):
+                if self.ui.tV_Stove.item(i, 0) is None or self.ui.tV_Stove.item(i, 0).text == '':
+                    break
+                if i >= len(js[0]["para"]):
+                    js[0]["para"].append({"id": i+1})
+                item_temp = self.ui.tV_Stove.item(i, 0).text()
+                item_time = self.ui.tV_Stove.item(i, 1).text()
+                js[0]["para"][i]["temp"] = item_temp
+                js[0]["para"][i]["time"] = item_time
+            js[0]["start"] = startVal
+            f.write(json.dumps(js, ensure_ascii=False))
+        self.ui.alarmBox.append('加热参数保存成功')
+        self.readConfig()
+
+    # -------------------------------------------------------------
     # 函数名： on_pB_Path_clicked
     # 功能： 修改保存路径(槽函数)
     # -------------------------------------------------------------
@@ -537,9 +569,9 @@ class SOCExpPlatform001(QWidget):
         headers.append('电池节数:%s' % str(self.unitBatteryPack))
         headers.append('电池面积(cm²):%s' % str(self.batteryArea))
         headers1 = [
-         "'日期'", "'记录时间（24小时）'", "'累计时间'", "'电流'", "'电压'",
-         "'功率'", "'电流密度'", "'功率密度'", "'单体电压'", "'加压压力'", "'加热炉温度'",
-         "'H2流量'", "'CH4流量'", "'CO2流量'", "'N2流量'", "'Air流量'", "'CO流量'"]
+            "'日期'", "'记录时间（24小时）'", "'累计时间'", "'电流'", "'电压'",
+            "'功率'", "'电流密度'", "'功率密度'", "'单体电压'", "'加压压力'", "'加热炉温度'",
+            "'H2流量'", "'CH4流量'", "'CO2流量'", "'N2流量'", "'Air流量'", "'CO流量'"]
         with open((self.filename), 'w', newline='', encoding='UTF-8-sig') as (file):
             f_csv = csv.writer(file)
             f_csv.writerow(headers)
@@ -754,10 +786,10 @@ class SOCExpPlatform001(QWidget):
             data = self.ui.dSB_ManualData.value()
             self.res.write('VOLT %f' % data)
         elif self.ui.rB_CP.isChecked():
-                if self.ui.pB_DisCharger.text() == '断开电子负载':
-                    self.res.write('FUNC POW')
-                data = self.ui.dSB_ManualData.value()
-                self.res.write('POW %f' % data)
+            if self.ui.pB_DisCharger.text() == '断开电子负载':
+                self.res.write('FUNC POW')
+            data = self.ui.dSB_ManualData.value()
+            self.res.write('POW %f' % data)
 
     # -------------------------------------------------------------
     # 函数名： disChargeManualStart
@@ -824,6 +856,26 @@ class SOCExpPlatform001(QWidget):
         pass
 
     # -------------------------------------------------------------
+    # 函数名： dischargeSave
+    # 功能： 保存自动充放电配置
+    # -------------------------------------------------------------
+    def dischargeSave(self):
+        with open('config.json', encoding="utf-8") as f:
+            js = json.load(f)
+        with open('config.json', 'w', encoding="utf-8") as f:
+            keys = list(js[1]["para"][0])
+            for i in range(self.ui.tV_Discharge.rowCount()):
+                if self.ui.tV_Discharge.item(i, 0) is None or self.ui.tV_Discharge.item(i, 0).text == '':
+                    break
+                if i >= len(js[1]["para"]):
+                    js[1]["para"].append({"id": i+1})
+                for j in range(12):
+                    js[1]["para"][i][keys[j + 1]] = self.ui.tV_Discharge.item(i, j).text()
+            f.write(json.dumps(js, ensure_ascii=False))
+        self.ui.alarmBox.append('充放电参数保存成功')
+        self.readConfig()
+
+    # -------------------------------------------------------------
     # 函数名： notExDischarge
     # 功能： 停止自动充放电*
     # -------------------------------------------------------------
@@ -833,7 +885,7 @@ class SOCExpPlatform001(QWidget):
         if self.ui.pB_Charger.text() == '断开直流电源':
             self.res.write('OUTP OFF')
         self.ExDischarge.stop()
-        self.ui.tV_Dischagre.setEnabled(True)
+        self.ui.tV_Discharge.setEnabled(True)
 
     @pyqtSlot()
     def on_pB_DisCharger_released(self):
@@ -947,11 +999,11 @@ class SOCExpPlatform001(QWidget):
             print('String To Float Error')
 
     # -------------------------------------------------------------
-    # 函数名： on_cB_DiachargeH2_clicked
+    # 函数名： on_cB_DischargeH2_clicked
     # 功能： 图表显示H2(槽函数)
     # -------------------------------------------------------------
     @pyqtSlot()
-    def on_cB_DiachargeH2_clicked(self):
+    def on_cB_DischargeH2_clicked(self):
         self.isVertical = False
         self._SOCExpPlatform001__initBarChart()
 
@@ -1090,69 +1142,67 @@ class SOCExpPlatform001(QWidget):
         self.seriesStove.setName('加热炉温度')
         if self.ui.cB_DischargeH2.isChecked():
             self.chart.addSeries(self.seriesH2)
+        if self.ui.cB_DischargeCH4.isChecked():
+            self.chart.addSeries(self.seriesCH4)
+        if self.ui.cB_DischargeCO2.isChecked():
+            self.chart.addSeries(self.seriesCO2)
+        if self.ui.cB_DischargeN2.isChecked():
+            self.chart.addSeries(self.seriesN2)
+        if self.ui.cB_DischargeAIR.isChecked():
+            self.chart.addSeries(self.seriesAIR)
+        if self.ui.cB_DischargeCO.isChecked():
+            self.chart.addSeries(self.seriesCO)
+        if self.ui.cB_DischargeCURR.isChecked():
+            self.chart.addSeries(self.seriesCURR)
+        if self.ui.cB_DischargeVOLT.isChecked():
+            self.chart.addSeries(self.seriesVOLT)
+        if self.ui.cB_DischargePOW.isChecked():
+            self.chart.addSeries(self.seriesPOW)
+        if self.ui.cB_DischargeCURRDansity.isChecked():
+            self.chart.addSeries(self.seriesCURRD)
+        if self.ui.cB_DischargePOWDansity.isChecked():
+            self.chart.addSeries(self.seriesPOWD)
+        if self.ui.cB_StoveTemp.isChecked():
+            self.chart.addSeries(self.seriesStove)
+        self.vlaxisX = QValueAxis()
+        self.vlaxisY = QValueAxis()
+        self.vlaxisX.setMin(0)
+        self.vlaxisX.setMax(10)
+        self.vlaxisY.setMin(0)
+        if self.ui.cB_StoveTemp.isChecked():
+            self.vlaxisY.setMax(1000)
         else:
-            if self.ui.cB_DischargeCH4.isChecked():
-                self.chart.addSeries(self.seriesCH4)
-            if self.ui.cB_DischargeCO2.isChecked():
-                self.chart.addSeries(self.seriesCO2)
-            if self.ui.cB_DischargeN2.isChecked():
-                self.chart.addSeries(self.seriesN2)
-            if self.ui.cB_DischargeAIR.isChecked():
-                self.chart.addSeries(self.seriesAIR)
-            if self.ui.cB_DischargeCO.isChecked():
-                self.chart.addSeries(self.seriesCO)
-            if self.ui.cB_DischargeCURR.isChecked():
-                self.chart.addSeries(self.seriesCURR)
-            if self.ui.cB_DischargeVOLT.isChecked():
-                self.chart.addSeries(self.seriesVOLT)
-            if self.ui.cB_DischargePOW.isChecked():
-                self.chart.addSeries(self.seriesPOW)
-            if self.ui.cB_DischargeCURRDansity.isChecked():
-                self.chart.addSeries(self.seriesCURRD)
-            if self.ui.cB_DischargePOWDansity.isChecked():
-                self.chart.addSeries(self.seriesPOWD)
-            if self.ui.cB_StoveTemp.isChecked():
-                self.chart.addSeries(self.seriesStove)
-            self.dtaxisX = QDateTimeAxis()
-            self.vlaxisY = QValueAxis()
-            self.dtaxisX.setMin(QDateTime.currentDateTime().addSecs(-5))
-            self.dtaxisX.setMax(QDateTime.currentDateTime().addSecs(0))
-            self.vlaxisY.setMin(0)
-            if self.ui.cB_StoveTemp.isChecked():
-                self.vlaxisY.setMax(1000)
-            else:
-                self.vlaxisY.setMax(200)
-        self.dtaxisX.setFormat('MM月dd hh:mm:ss')
-        self.dtaxisX.setTickCount(6)
-        self.vlaxisY.setTickCount(11)
-        self.dtaxisX.setTitleText('时间')
+            self.vlaxisY.setMax(200)
+        self.vlaxisX.setTickCount(6)
+        self.vlaxisY.setTickCount(6)
+        self.vlaxisX.setTitleText('时间')
         self.vlaxisY.setTitleText('量程')
         self.vlaxisY.setGridLineVisible(False)
-        self.chart.addAxis(self.dtaxisX, Qt.AlignBottom)
+        self.chart.addAxis(self.vlaxisX, Qt.AlignBottom)
         self.chart.addAxis(self.vlaxisY, Qt.AlignLeft)
-        self.seriesH2.attachAxis(self.dtaxisX)
+        self.seriesH2.attachAxis(self.vlaxisX)
         self.seriesH2.attachAxis(self.vlaxisY)
-        self.seriesCH4.attachAxis(self.dtaxisX)
+        self.seriesCH4.attachAxis(self.vlaxisX)
         self.seriesCH4.attachAxis(self.vlaxisY)
-        self.seriesCO2.attachAxis(self.dtaxisX)
+        self.seriesCO2.attachAxis(self.vlaxisX)
         self.seriesCO2.attachAxis(self.vlaxisY)
-        self.seriesN2.attachAxis(self.dtaxisX)
+        self.seriesN2.attachAxis(self.vlaxisX)
         self.seriesN2.attachAxis(self.vlaxisY)
-        self.seriesAIR.attachAxis(self.dtaxisX)
+        self.seriesAIR.attachAxis(self.vlaxisX)
         self.seriesAIR.attachAxis(self.vlaxisY)
-        self.seriesCO.attachAxis(self.dtaxisX)
+        self.seriesCO.attachAxis(self.vlaxisX)
         self.seriesCO.attachAxis(self.vlaxisY)
-        self.seriesCURR.attachAxis(self.dtaxisX)
+        self.seriesCURR.attachAxis(self.vlaxisX)
         self.seriesCURR.attachAxis(self.vlaxisY)
-        self.seriesVOLT.attachAxis(self.dtaxisX)
+        self.seriesVOLT.attachAxis(self.vlaxisX)
         self.seriesVOLT.attachAxis(self.vlaxisY)
-        self.seriesPOW.attachAxis(self.dtaxisX)
+        self.seriesPOW.attachAxis(self.vlaxisX)
         self.seriesPOW.attachAxis(self.vlaxisY)
-        self.seriesCURRD.attachAxis(self.dtaxisX)
+        self.seriesCURRD.attachAxis(self.vlaxisX)
         self.seriesCURRD.attachAxis(self.vlaxisY)
-        self.seriesPOWD.attachAxis(self.dtaxisX)
+        self.seriesPOWD.attachAxis(self.vlaxisX)
         self.seriesPOWD.attachAxis(self.vlaxisY)
-        self.seriesStove.attachAxis(self.dtaxisX)
+        self.seriesStove.attachAxis(self.vlaxisX)
         self.seriesStove.attachAxis(self.vlaxisY)
         self.isVertical = False
 
@@ -1162,6 +1212,28 @@ class SOCExpPlatform001(QWidget):
     # -------------------------------------------------------------
     def drawChart(self):
         pass
+
+    # -------------------------------------------------------------
+    # 函数名： configResetAuto
+    # 功能：自动重置配置
+    # -------------------------------------------------------------
+    def configResetAuto(self):
+        ORIGIN_CONFIG = '[{"name": "stove", "para": [{"id": 1, "temp": "701", "time": "10"}, {"id": 2, "temp": "702", "time": "20"}], "start": 0}, {"name": "discharge", "para": [{"id": 1, "参与状态": "参与", "过程选择": "充电", "工作模式": "LCC", "开始数值": 1, "递增数值": 0, "单位1": "A", "单步时间": 0, "单位2": "s", "停机依据": "电堆电流", "判断逻辑": "小于", "触发数值": 1, "单位3": "A"}, {"id": 2, "参与状态": "参与", "过程选择": "放电", "工作模式": "CC", "开始数值": 0, "递增数值": 0, "单位1": "A", "单步时间": 0, "单位2": "s", "停机依据": "电堆电流", "判断逻辑": "大于", "触发数值": 0, "单位3": "A"}]}]'
+        with open('config.json', 'w', encoding='utf-8') as f:
+            f.write(json.dumps(eval(ORIGIN_CONFIG), ensure_ascii=False))
+
+    # -------------------------------------------------------------
+    # 函数名： configReset
+    # 功能：手动重置配置
+    # -------------------------------------------------------------
+    def configReset(self):
+        reply = QMessageBox.question(self, "Alarm", "配置信息重置后不可回退，确认继续么？", QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.No:
+            return
+        ORIGIN_CONFIG = '[{"name": "stove", "para": [{"id": 1, "temp": "701", "time": "10"}, {"id": 2, "temp": "702", "time": "20"}], "start": 0}, {"name": "discharge", "para": [{"id": 1, "参与状态": "参与", "过程选择": "充电", "工作模式": "LCC", "开始数值": 1, "递增数值": 0, "单位1": "A", "单步时间": 0, "单位2": "s", "停机依据": "电堆电流", "判断逻辑": "小于", "触发数值": 1, "单位3": "A"}, {"id": 2, "参与状态": "参与", "过程选择": "放电", "工作模式": "CC", "开始数值": 0, "递增数值": 0, "单位1": "A", "单步时间": 0, "单位2": "s", "停机依据": "电堆电流", "判断逻辑": "大于", "触发数值": 0, "单位3": "A"}]}]'
+        with open('config.json', 'w', encoding='utf-8') as f:
+            f.write(json.dumps(eval(ORIGIN_CONFIG), ensure_ascii=False))
+            self.ui.alarmBox.append('<font color="red">配置信息已重置</font>')
 
     # -------------------------------------------------------------
     # 函数名： helpWindow
@@ -1187,7 +1259,7 @@ class SOCExpPlatform001(QWidget):
     def batteryWindow(self):
         self.window4 = BatteryWindow()
         self.window4.initBatteryInfo(self.batteryNO, self.unitBattery, self.unitBatteryPack, self.batteryArea)
-        #self.window4.show()
+        # self.window4.show()
         ret = self.window4.exec()
         if ret == QDialog.Accepted:
             self.batteryNO, self.unitBattery, self.unitBatteryPack, self.batteryArea = self.window4.setBatteryInfo()

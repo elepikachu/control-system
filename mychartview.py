@@ -9,6 +9,7 @@ from PyQt5.QtCore import pyqtSignal, QPoint, Qt, QRectF
 from PyQt5.QtGui import QMouseEvent, QKeyEvent
 from PyQt5.QtChart import QChartView
 
+
 class QMyChartView(QChartView):
     mouseMove = pyqtSignal(QPoint)
 

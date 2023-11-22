@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1440</width>
+    <width>1441</width>
     <height>759</height>
    </rect>
   </property>
@@ -269,15 +269,28 @@ border-image:url(:/images/background.png)
    <property name="title">
     <string>实时数据显示</string>
    </property>
-   <widget class="QMyChartView" name="gV_DataDisplay">
+   <widget class="QGroupBox" name="groupBox">
     <property name="geometry">
      <rect>
       <x>0</x>
       <y>20</y>
-      <width>371</width>
-      <height>291</height>
+      <width>391</width>
+      <height>321</height>
      </rect>
     </property>
+    <property name="title">
+     <string/>
+    </property>
+    <widget class="QMyChartView" name="gV_DataDisplay">
+     <property name="geometry">
+      <rect>
+       <x>-30</x>
+       <y>-20</y>
+       <width>441</width>
+       <height>361</height>
+      </rect>
+     </property>
+    </widget>
    </widget>
   </widget>
   <widget class="QGroupBox" name="gB_parameter">
@@ -405,9 +418,9 @@ color:black
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>390</y>
+      <y>385</y>
       <width>601</width>
-      <height>271</height>
+      <height>275</height>
      </rect>
     </property>
     <property name="title">
@@ -417,7 +430,7 @@ color:black
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>20</y>
+       <y>18</y>
        <width>581</width>
        <height>41</height>
       </rect>
@@ -459,7 +472,7 @@ color:black
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>60</y>
+       <y>59</y>
        <width>581</width>
        <height>91</height>
       </rect>
@@ -645,7 +658,7 @@ color:black
        <x>10</x>
        <y>150</y>
        <width>581</width>
-       <height>121</height>
+       <height>125</height>
       </rect>
      </property>
      <property name="title">
@@ -655,7 +668,7 @@ color:black
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
+        <y>16</y>
         <width>561</width>
         <height>81</height>
        </rect>
@@ -745,11 +758,17 @@ color:black
      <widget class="QPushButton" name="bB_Discharge_S">
       <property name="geometry">
        <rect>
-        <x>140</x>
+        <x>240</x>
         <y>100</y>
         <width>91</width>
-        <height>23</height>
+        <height>20</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>SimSun-ExtB</family>
+        <pointsize>9</pointsize>
+       </font>
       </property>
       <property name="styleSheet">
        <string notr="true">color:black</string>
@@ -761,17 +780,45 @@ color:black
      <widget class="QPushButton" name="bB_Discharge_E">
       <property name="geometry">
        <rect>
-        <x>330</x>
+        <x>360</x>
         <y>100</y>
         <width>91</width>
-        <height>23</height>
+        <height>20</height>
        </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>SimSun-ExtB</family>
+        <pointsize>9</pointsize>
+       </font>
       </property>
       <property name="styleSheet">
        <string notr="true">color:black</string>
       </property>
       <property name="text">
        <string>停止</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="bB_Discharge_Save">
+      <property name="geometry">
+       <rect>
+        <x>120</x>
+        <y>100</y>
+        <width>91</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="font">
+       <font>
+        <family>SimSun-ExtB</family>
+        <pointsize>9</pointsize>
+       </font>
+      </property>
+      <property name="styleSheet">
+       <string notr="true">color:black</string>
+      </property>
+      <property name="text">
+       <string>保存配置</string>
       </property>
      </widget>
     </widget>
@@ -917,7 +964,7 @@ color:black
       <string>起始程序段：</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="sB_StoveSave">
+    <widget class="QPushButton" name="bB_StoveSave">
      <property name="geometry">
       <rect>
        <x>140</x>
@@ -3513,13 +3560,13 @@ border-image:url(:/images/gate2.png)
     </rect>
    </property>
    <property name="toolTip">
-    <string>配置设置</string>
+    <string>加热参数和自动模式配置重置为默认值</string>
    </property>
    <property name="statusTip">
     <string/>
    </property>
    <property name="text">
-    <string>配置设置</string>
+    <string>配置重置</string>
    </property>
    <property name="checkable">
     <bool>true</bool>
