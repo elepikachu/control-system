@@ -8,6 +8,8 @@
 import csv
 import json
 import os
+import time
+
 import snap7
 import sys
 from datetime import datetime
@@ -17,8 +19,8 @@ import numpy as np
 import pyvisa as visa
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtChart import *
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QDateTime, QTimer, QThread
-from PyQt5.QtGui import QPainter, QIcon
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QDateTime, QTimer, QThread, QItemSelectionModel
+from PyQt5.QtGui import QPainter, QIcon, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QDialogButtonBox, QDialog, QTableWidgetItem
 from matplotlib.widgets import CheckButtons
 
@@ -60,7 +62,13 @@ class SOCExpPlatform001(QWidget):
         self.unitBatteryPack = 8
         self.batteryArea = 60
         self.StoveTempStart = 0
+        self.alarmData = 0
+        self.alarmCurrentData = 0
         self.circle_time = self.ui.sB_SetScanCircle.value()
+        self.itemModel_tV = QStandardItemModel(0, 2, self)
+        self.selectionModel_tV = QItemSelectionModel(self.itemModel_tV)
+        self.ui.tV_log.setModel(self.itemModel_tV)
+        self.itemModel_tV.setHorizontalHeaderLabels(['时间','描述'])
         self._SOCExpPlatform001__initBarChart()
         self.initPLCConnect()
         self.plcGetValue()
@@ -73,6 +81,7 @@ class SOCExpPlatform001(QWidget):
     # 功能： 读取json的配置信息
     # -------------------------------------------------------------
     def readConfig(self):
+        #self.initTable()
         with open('config.json', encoding="utf-8") as load_f:
             try:
                 js = json.load(load_f)
@@ -93,10 +102,42 @@ class SOCExpPlatform001(QWidget):
             disConfig = js[1]["para"]
             rowCnt2 = len(disConfig)
             keys = list(disConfig[0])
-            print(1)
             for i in range(rowCnt2):
-                for j in range(1, 13):
+                for j in range(1, 10):
                     self.ui.tV_Discharge.setItem(i, j - 1, QTableWidgetItem(str(disConfig[i][keys[j]])))
+
+    # -------------------------------------------------------------
+    # 函数名： initTable
+    # 功能： 放电表格选择栏设置
+    # -------------------------------------------------------------
+    def initTable(self):
+        combo_join = QtWidgets.QComboBox()
+        combo_join.addItem('参与')
+        combo_join.addItem('不参与')
+        combo_process = QtWidgets.QComboBox()
+        combo_process.addItem('充电')
+        combo_process.addItem('放电')
+        combo_mode = QtWidgets.QComboBox()
+        combo_mode.addItem('CC(A)')
+        combo_mode.addItem('CV(V)')
+        combo_mode.addItem('CP(W)')
+        combo_mode.addItem('LCC(A)')
+        combo_mode.addItem('LCV(V)')
+        combo_mode.addItem('LCP(W)')
+        combo_stop = QtWidgets.QComboBox()
+        combo_stop.addItem('电堆电流(A)')
+        combo_stop.addItem('电堆电压(V)')
+        combo_stop.addItem('电堆功率(W)')
+        combo_stop.addItem('执行时间(s)')
+        combo_logic = QtWidgets.QComboBox()
+        combo_logic.addItem('大于')
+        combo_logic.addItem('小于')
+        for i in range(self.ui.tV_Discharge.rowCount()-1):
+            self.ui.tV_Discharge.setCellWidget(i, 0, combo_join)
+            self.ui.tV_Discharge.setCellWidget(i, 1, combo_process)
+            self.ui.tV_Discharge.setCellWidget(i, 2, combo_mode)
+            self.ui.tV_Discharge.setCellWidget(i, 6, combo_stop)
+            self.ui.tV_Discharge.setCellWidget(i, 7, combo_logic)
 
     # -------------------------------------------------------------
     # 函数名： setTimer
@@ -111,8 +152,8 @@ class SOCExpPlatform001(QWidget):
         self.ExDischarge.timeout.connect(self.doDisCharge)
         self.StoveHeatTime = QTimer()
         self.StoveHeatTime.timeout.connect(self.StoveHeating)
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.drawChart)
+        self.plotTimer = QTimer()
+        self.plotTimer.timeout.connect(self.drawChart)
 
     # -------------------------------------------------------------
     # 函数名： buttonConnect
@@ -160,7 +201,7 @@ class SOCExpPlatform001(QWidget):
             self.ui.l_ElcLoad.setText('连接成功')
             self.data = self.plc.read_area(snap7.types.Areas.DB, 1, 0, 300)
             self.ui.pB_PLCConnection.setText('断开PLC')
-            self.timer.start(100)
+            self.plotTimer.start(100)
             print('connected to PLC')
             self.ui.alarmBox.append('<font color="blue">PLC连接成功</font>')
             self.plc_flag = 1
@@ -361,7 +402,7 @@ class SOCExpPlatform001(QWidget):
             self.ui.alarmBox.append('<font color="blue">PLC连接成功</font>')
             self.ui.pB_PLCConnection.setText('断开PLC')
             self.plc_flag = True
-            self.timer.start(100)
+            self.plotTimer.start(100)
         except Exception as e:
             print('Fail to Connect PLC')
             self.ui.alarmBox.append('<font color="red">PLC连接失败！请检查PLC</font>')
@@ -379,7 +420,7 @@ class SOCExpPlatform001(QWidget):
             self.ui.alarmBox.append('<font color="blue">PLC断开成功</font>')
             self.ui.pB_PLCConnection.setText('连接PLC')
             self.plc_flag = False
-            self.timer.stop()
+            self.plotTimer.stop()
         except Exception as e:
             print('PLC DisConnect Error')
             self.ui.alarmBox.append('<font color="red">PLC断开连接失败！请检查</font>')
@@ -551,6 +592,8 @@ class SOCExpPlatform001(QWidget):
             js[0]["start"] = startVal
             f.write(json.dumps(js, ensure_ascii=False))
         self.ui.alarmBox.append('加热参数保存成功')
+        self.ui.tV_Discharge.clearContents()
+        self.ui.tV_Stove.clearContents()
         self.readConfig()
 
     # -------------------------------------------------------------
@@ -707,7 +750,7 @@ class SOCExpPlatform001(QWidget):
             self.ui.dSB_ManualData.setEnabled(True)
             self.ui.bB_Manual_S.setEnabled(True)
             self.ui.bB_Manual_E.setEnabled(True)
-            self.ui.tV_Dischagre.setEnabled(False)
+            self.ui.tV_Discharge.setEnabled(False)
             self.ui.bB_Discharge_E.setEnabled(False)
             self.ui.bB_Discharge_S.setEnabled(False)
             self.ui.rB_CC.setEnabled(True)
@@ -720,7 +763,7 @@ class SOCExpPlatform001(QWidget):
             self.ui.dSB_ManualData.setEnabled(False)
             self.ui.bB_Manual_S.setEnabled(False)
             self.ui.bB_Manual_E.setEnabled(False)
-            self.ui.tV_Dischagre.setEnabled(True)
+            self.ui.tV_Discharge.setEnabled(True)
             self.ui.bB_Discharge_S.setEnabled(True)
             self.ui.bB_Discharge_E.setEnabled(True)
             self.ui.rB_CC.setEnabled(False)
@@ -833,7 +876,7 @@ class SOCExpPlatform001(QWidget):
 
     # -------------------------------------------------------------
     # 函数名： excuteDischarge
-    # 功能：执行自动充放电*
+    # 功能：执行自动充放电
     # -------------------------------------------------------------
     def excuteDischarge(self):
         self.itemIndex = self.itemModel_Dis.rowCount()
@@ -853,7 +896,323 @@ class SOCExpPlatform001(QWidget):
     # 功能： 自动充放电*
     # -------------------------------------------------------------
     def doDisCharge(self):
-        pass
+        itemList = []
+        item = self.itemModel_Dis.item(self.itemIndexBuff, 0)
+        data_Curr = float(self.dataList[0])
+        data_Volt = float(self.dataList[1])
+        data_Pow = float(self.dataList[2])
+        self.ExDischargeTime = self.ExDischargeTime + 1
+        self.LC_Time = self.LC_Time + 1
+        self.ui.tV_Dischagre.selectRow(self.itemIndexBuff)
+        if item.checkState() == Qt.Checked:
+            itemList.append('参与')
+        else:
+            itemList.append('不参与')
+        for i in range(self.itemModel_Dis.columnCount() - 1):
+            item = self.itemModel_Dis.item(self.itemIndexBuff, i + 1)
+            itemList.append(item.text())
+
+        data_Ref = float(itemList[11])
+        if self.itemIndexBuff <= self.itemIndex:
+            if itemList[0] == '不参与':
+                print('不参与')
+                self.itemIndexBuff = self.itemIndexBuff + 1
+            elif itemList[2] == 'CC':
+                if itemList[1] == '放电':
+                    self.res.write('FUNC CURR')
+                data = float(itemList[3])
+                self.res.write('CURR %f' % data)
+                if itemList[9] == '电堆电流':
+                    if itemList[10] == '大于' or data_Curr >= data_Ref:
+                        print('电堆电流大于')
+                        self.itemIndexBuff = self.itemIndexBuff + 1
+                    elif data_Curr <= data_Ref:
+                        print('电堆电流小于')
+                        self.itemIndexBuff = self.itemIndexBuff + 1
+
+                if itemList[9] == '电堆电压':
+                    if itemList[10] == '大于' or data_Volt >= data_Ref:
+                        print('电堆电压大于')
+                        self.itemIndexBuff = self.itemIndexBuff + 1
+                    elif data_Volt <= data_Ref:
+                        print('电堆电压小于')
+                        self.itemIndexBuff = self.itemIndexBuff + 1
+                    elif itemList[9] == '电堆功率':
+                        if itemList[10] == '大于' or data_Pow >= data_Ref:
+                            print('电堆功率大于')
+                            self.itemIndexBuff = self.itemIndexBuff + 1
+                        elif data_Pow <= data_Ref:
+                            print('电堆功率小于')
+                            self.itemIndexBuff = self.itemIndexBuff + 1
+                        else:
+                            data_Time = data_Ref * 10
+                            if itemList[10] == '大于' or float(self.ExDischargeTime) >= data_Time:
+                                print('执行时间大于')
+                                self.ExDischargeTime = 0
+                                self.itemIndexBuff = self.itemIndexBuff + 1
+                            elif float(self.ExDischargeTime) <= data_Time:
+                                print('执行时间小于')
+                                self.ExDischargeTime = 0
+                                self.itemIndexBuff = self.itemIndexBuff + 1
+                            elif itemList[2] == 'CV':
+                                if itemList[1] == '放电':
+                                    self.res.write('FUNC VOLT')
+                                data = float(itemList[3])
+                                self.res.write('VOLT %f' % data)
+                                if itemList[9] == '电堆电流':
+                                    if itemList[10] == '大于' or data_Curr >= data_Ref:
+                                        print('电堆电流大于')
+                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                    elif data_Curr <= data_Ref:
+                                        print('电堆电流小于')
+                                        self.itemIndexBuff = self.itemIndexBuff + 1
+
+                                if itemList[9] == '电堆电压':
+                                    if itemList[10] == '大于' or data_Volt >= data_Ref:
+                                        print('电堆电压大于')
+                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                    elif data_Volt <= data_Ref:
+                                        print('电堆电压小于')
+                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                    elif itemList[9] == '电堆功率':
+                                        if itemList[10] == '大于' or data_Pow >= data_Ref:
+                                            print('电堆功率大于')
+                                            self.itemIndexBuff = self.itemIndexBuff + 1
+                                        elif data_Pow <= data_Ref:
+                                            print('电堆功率小于')
+                                            self.itemIndexBuff = self.itemIndexBuff + 1
+                                        else:
+                                            data_Time = data_Ref * 10
+                                            if itemList[10] == '大于' or float(self.ExDischargeTime) >= data_Time:
+                                                print('执行时间大于')
+                                                self.ExDischargeTime = 0
+                                                self.itemIndexBuff = self.itemIndexBuff + 1
+                                            elif float(self.ExDischargeTime) <= data_Time:
+                                                print('执行时间小于')
+                                                self.ExDischargeTime = 0
+                                                self.itemIndexBuff = self.itemIndexBuff + 1
+                                            elif itemList[2] == 'CP':
+                                                if itemList[1] == '放电':
+                                                    self.res.write('FUNC POW')
+                                                data = float(itemList[3])
+                                                self.res.write('POW %f' % data)
+                                                if itemList[9] == '电堆电流':
+                                                    if itemList[10] == '大于' or data_Curr >= data_Ref:
+                                                        print('电堆电流大于')
+                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                                    elif data_Curr <= data_Ref:
+                                                        print('电堆电流小于')
+                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+
+                                                if itemList[9] == '电堆电压':
+                                                    if itemList[10] == '大于' or data_Volt >= data_Ref:
+                                                        print('电堆电压大于')
+                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                                    elif data_Volt <= data_Ref:
+                                                        print('电堆电压小于')
+                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                                    elif itemList[9] == '电堆功率':
+                                                        if itemList[10] == '大于' or data_Pow >= data_Ref:
+                                                            print('电堆功率大于')
+                                                            self.itemIndexBuff = self.itemIndexBuff + 1
+                                                        elif data_Pow <= data_Ref:
+                                                            print('电堆功率小于')
+                                                            self.itemIndexBuff = self.itemIndexBuff + 1
+                                                        else:
+                                                            data_Time = data_Ref * 10
+                                                            if itemList[10] == '大于' or float(
+                                                                    self.ExDischargeTime) >= data_Time:
+                                                                print('执行时间大于')
+                                                                self.ExDischargeTime = 0
+                                                                self.itemIndexBuff = self.itemIndexBuff + 1
+                                                            elif float(self.ExDischargeTime) <= data_Time:
+                                                                print('执行时间小于')
+                                                                self.ExDischargeTime = 0
+                                                                self.itemIndexBuff = self.itemIndexBuff + 1
+                                                            elif itemList[2] == 'LCC':
+                                                                if itemList[1] == '放电':
+                                                                    self.res.write('FUNC CURR')
+                                                                if self.LC_Time >= float(itemList[7]) * 10:
+                                                                    self.LC_Data = self.LC_Data + float(itemList[5])
+                                                                    self.LC_Time = 0
+                                                                data = float(itemList[3])
+                                                                data = data + self.LC_Data
+                                                                self.res.write('CURR %f' % data)
+                                                                if itemList[9] == '电堆电流':
+                                                                    if itemList[
+                                                                        10] == '大于' or data_Curr >= data_Ref:
+                                                                        print('电堆电流大于')
+                                                                        self.LC_Time = 0
+                                                                        self.LC_Data = 0
+                                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                    elif data_Curr <= data_Ref:
+                                                                        print('电堆电流小于')
+                                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+
+                                                                if itemList[9] == '电堆电压':
+                                                                    if itemList[
+                                                                        10] == '大于' or data_Volt >= data_Ref:
+                                                                        print('电堆电压大于')
+                                                                        self.LC_Time = 0
+                                                                        self.LC_Data = 0
+                                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                    elif data_Volt <= data_Ref:
+                                                                        print('电堆电压小于')
+                                                                        self.LC_Time = 0
+                                                                        self.LC_Data = 0
+                                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                    elif itemList[9] == '电堆功率':
+                                                                        if itemList[
+                                                                            10] == '大于' or data_Pow >= data_Ref:
+                                                                            print('电堆功率大于')
+                                                                            self.LC_Time = 0
+                                                                            self.LC_Data = 0
+                                                                            self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                        elif data_Pow <= data_Ref:
+                                                                            print('电堆功率小于')
+                                                                            self.LC_Time = 0
+                                                                            self.LC_Data = 0
+                                                                            self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                        else:
+                                                                            data_Time = data_Ref * 10
+                                                                            if itemList[10] == '大于' or float(
+                                                                                    self.ExDischargeTime) >= data_Time:
+                                                                                print('执行时间大于')
+                                                                                self.LC_Time = 0
+                                                                                self.LC_Data = 0
+                                                                                self.ExDischargeTime = 0
+                                                                                self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                            elif float(
+                                                                                    self.ExDischargeTime) <= data_Time:
+                                                                                print('执行时间小于')
+                                                                                self.LC_Time = 0
+                                                                                self.LC_Data = 0
+                                                                                self.ExDischargeTime = 0
+                                                                                self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                            elif itemList[2] == 'LCV':
+                                                                                if itemList[1] == '放电':
+                                                                                    self.res.write('FUNC VOLT')
+                                                                                if self.LC_Time >= float(
+                                                                                        itemList[7]) * 10:
+                                                                                    self.LC_Data = self.LC_Data + float(
+                                                                                        itemList[5])
+                                                                                    self.LC_Time = 0
+                                                                                data = float(itemList[3])
+                                                                                data = data + self.LC_Data
+                                                                                self.res.write('VOLT %f' % data)
+                                                                                if itemList[9] == '电堆电流':
+                                                                                    if itemList[
+                                                                                        10] == '大于' or data_Curr >= data_Ref:
+                                                                                        print('电堆电流大于')
+                                                                                        self.LC_Time = 0
+                                                                                        self.LC_Data = 0
+                                                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                                    elif data_Curr <= data_Ref:
+                                                                                        print('电堆电流小于')
+                                                                                        self.LC_Time = 0
+                                                                                        self.LC_Data = 0
+                                                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+
+                                                                                if itemList[9] == '电堆电压':
+                                                                                    if itemList[
+                                                                                        10] == '大于' or data_Volt >= data_Ref:
+                                                                                        print('电堆电压大于')
+                                                                                        self.LC_Time = 0
+                                                                                        self.LC_Data = 0
+                                                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                                    elif data_Volt <= data_Ref:
+                                                                                        print('电堆电压小于')
+                                                                                        self.LC_Time = 0
+                                                                                        self.LC_Data = 0
+                                                                                        self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                                    elif itemList[9] == '电堆功率':
+                                                                                        if itemList[
+                                                                                            10] == '大于' or data_Pow >= data_Ref:
+                                                                                            print('电堆功率大于')
+                                                                                            self.LC_Time = 0
+                                                                                            self.LC_Data = 0
+                                                                                            self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                                        elif data_Pow <= data_Ref:
+                                                                                            print('电堆功率小于')
+                                                                                            self.LC_Time = 0
+                                                                                            self.LC_Data = 0
+                                                                                            self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                                        else:
+                                                                                            data_Time = data_Ref * 10
+                                                                                            if itemList[
+                                                                                                10] == '大于' or float(
+                                                                                                self.ExDischargeTime) >= data_Time:
+                                                                                                print('执行时间大于')
+                                                                                                self.LC_Time = 0
+                                                                                                self.LC_Data = 0
+                                                                                                self.ExDischargeTime = 0
+                                                                                                self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                                            elif float(
+                                                                                                    self.ExDischargeTime) <= data_Time:
+                                                                                                print('执行时间小于')
+                                                                                                self.LC_Time = 0
+                                                                                                self.LC_Data = 0
+                                                                                                self.ExDischargeTime = 0
+                                                                                                self.itemIndexBuff = self.itemIndexBuff + 1
+                                                                                            elif itemList[
+                                                                                                1] == '放电':
+                                                                                                self.res.write(
+                                                                                                    'FUNC POW')
+            if self.LC_Time >= float(itemList[7]) * 10:
+                self.LC_Data = self.LC_Data + float(itemList[5])
+                self.LC_Time = 0
+            data = float(itemList[3])
+            data = data + self.LC_Data
+            self.res.write('POW %f' % data)
+            if itemList[9] == '电堆电流':
+                if itemList[10] == '大于' or data_Curr >= data_Ref:
+                    print('电堆电流大于')
+                    self.LC_Time = 0
+                    self.LC_Data = 0
+                    self.itemIndexBuff = self.itemIndexBuff + 1
+                elif data_Curr <= data_Ref:
+                    print('电堆电流小于')
+                    self.LC_Time = 0
+                    self.LC_Data = 0
+                    self.itemIndexBuff = self.itemIndexBuff + 1
+                elif itemList[9] == '电堆电压':
+                    if itemList[10] == '大于' or data_Volt >= data_Ref:
+                        print('电堆电压大于')
+                        self.LC_Time = 0
+                        self.LC_Data = 0
+                        self.itemIndexBuff = self.itemIndexBuff + 1
+                    elif data_Volt <= data_Ref:
+                        print('电堆电压小于')
+                        self.LC_Time = 0
+                        self.LC_Data = 0
+                        self.itemIndexBuff = self.itemIndexBuff + 1
+                    elif itemList[9] == '电堆功率':
+                        if itemList[10] == '大于' or data_Pow >= data_Ref:
+                            print('电堆功率大于')
+                            self.LC_Time = 0
+                            self.LC_Data = 0
+                            self.itemIndexBuff = self.itemIndexBuff + 1
+                        elif data_Pow <= data_Ref:
+                            print('电堆功率小于')
+                            self.LC_Time = 0
+                            self.LC_Data = 0
+                            self.itemIndexBuff = self.itemIndexBuff + 1
+                        else:
+                            data_Time = data_Ref * 10
+                            if itemList[10] == '大于' or float(self.ExDischargeTime) >= data_Time:
+                                print('执行时间大于')
+                                self.LC_Time = 0
+                                self.LC_Data = 0
+                                self.ExDischargeTime = 0
+                                self.itemIndexBuff = self.itemIndexBuff + 1
+                            elif float(self.ExDischargeTime) <= data_Time:
+                                print('执行时间小于')
+                                self.LC_Time = 0
+                                self.LC_Data = 0
+                                self.ExDischargeTime = 0
+                                self.itemIndexBuff = self.itemIndexBuff + 1
+        if self.itemIndexBuff == self.itemIndex:
+            self.NotExDischarge()
 
     # -------------------------------------------------------------
     # 函数名： dischargeSave
@@ -869,15 +1228,17 @@ class SOCExpPlatform001(QWidget):
                     break
                 if i >= len(js[1]["para"]):
                     js[1]["para"].append({"id": i+1})
-                for j in range(12):
+                for j in range(9):
                     js[1]["para"][i][keys[j + 1]] = self.ui.tV_Discharge.item(i, j).text()
             f.write(json.dumps(js, ensure_ascii=False))
         self.ui.alarmBox.append('充放电参数保存成功')
+        self.ui.tV_Discharge.clearContents()
+        self.ui.tV_Stove.clearContents()
         self.readConfig()
 
     # -------------------------------------------------------------
     # 函数名： notExDischarge
-    # 功能： 停止自动充放电*
+    # 功能： 停止自动充放电
     # -------------------------------------------------------------
     def notExDischarge(self):
         if self.ui.pB_DisCharger.text() == '断开电子负载':
@@ -887,6 +1248,10 @@ class SOCExpPlatform001(QWidget):
         self.ExDischarge.stop()
         self.ui.tV_Discharge.setEnabled(True)
 
+    # -------------------------------------------------------------
+    # 函数名： on_pB_DisCharger_released
+    # 功能： 连接电子负载
+    # -------------------------------------------------------------
     @pyqtSlot()
     def on_pB_DisCharger_released(self):
         if self.ui.pB_DisCharger.isChecked():
@@ -912,6 +1277,10 @@ class SOCExpPlatform001(QWidget):
             self.ui.l_Connect_Dis.setStyleSheet('color:black')
             self.ui.l_Connect_Dis.setText('未连接负载')
 
+    # -------------------------------------------------------------
+    # 函数名： on_pB_Charger_released
+    # 功能： 连接直流电源
+    # -------------------------------------------------------------
     @pyqtSlot()
     def on_pB_Charger_released(self):
         if self.ui.pB_Charger.isChecked():
@@ -1108,7 +1477,7 @@ class SOCExpPlatform001(QWidget):
 
     # -------------------------------------------------------------
     # 函数名： __initBarChart
-    # 功能： 初始化图表*
+    # 功能： 初始化图表
     # -------------------------------------------------------------
     def __initBarChart(self):
         chart = QChart()
@@ -1166,14 +1535,16 @@ class SOCExpPlatform001(QWidget):
             self.chart.addSeries(self.seriesStove)
         self.vlaxisX = QValueAxis()
         self.vlaxisY = QValueAxis()
-        self.vlaxisX.setMin(0)
-        self.vlaxisX.setMax(10)
+        self.x = 0
+        self.Ts = 0.01
+        self.vlaxisX.setMin(self.x)
+        self.vlaxisX.setMax(self.x + 12)
         self.vlaxisY.setMin(0)
         if self.ui.cB_StoveTemp.isChecked():
             self.vlaxisY.setMax(1000)
         else:
             self.vlaxisY.setMax(200)
-        self.vlaxisX.setTickCount(6)
+        self.vlaxisX.setTickCount(7)
         self.vlaxisY.setTickCount(6)
         self.vlaxisX.setTitleText('时间')
         self.vlaxisY.setTitleText('量程')
@@ -1211,14 +1582,585 @@ class SOCExpPlatform001(QWidget):
     # 功能：绘制图表
     # -------------------------------------------------------------
     def drawChart(self):
-        pass
+        if self.ui.pB_DisCharger.text() == '断开电子负载':
+            self.Thread.start()
+        if self.ui.pB_Charger.text() == '断开直流电源':
+            self.Thread_Ch.start()
+        self.data = self.plc.read_area(snap7.types.Areas.DB, 1, 0, 300)
+        self.alarmCurrentData = snap7.util.get_dword(self.data, 195)
+        n2Flow = snap7.util.get_byte(self.data, 180)
+        if n2Flow == 1:
+            self.ui.alarmBox.append('氮气吹扫中')
+            self.ui.bB_N2Flow_S.button.setEnabled(False)
+        else:
+            self.ui.alarmBox.append('氮气未吹扫')
+            self.ui.bB_N2Flow_S.button.setEnabled(True)
+        self.GasPressure = snap7.util.get_real(self.data, 36)
+        self.ui.l_GasPressure.setText('压力(N): %.2f' % self.GasPressure)
+        LowLevel = snap7.util.get_byte(self.data, 189)
+        if LowLevel == 1:
+            self.ui.l_caution.setStyleSheet('')
+        else:
+            self.ui.l_caution.setStyleSheet('image:url(:/images/img/caution.png)')
+        CylinderHome = snap7.util.get_bool(self.data, 199, 0)
+        if CylinderHome == True:
+            self.GassPressNotHome()
+        if self.alarmCurrentData != self.alarmData:
+            alarm = snap7.util.get_bool(self.data, 195, 0)
+            timeData = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:H2流量三级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:H2流量三级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 195, 1)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:H2流量二级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:H2流量二级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 195, 2)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:H2流量低于最小设定流量</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:H2流量低于最小设定流量')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 195, 3)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:H2_MFC断路短路（无信号）</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:H2_MFC断路短路（无信号）')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 195, 4)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CO流量三级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CO流量三级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 195, 5)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CO流量二级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CO流量二级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 195, 6)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CO流量低于最小设定流量</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CO流量低于最小设定流量')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 195, 7)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CO_MFC断路短路（无信号）</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CO_MFC断路短路（无信号）')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 196, 0)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CO2流量三级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CO2流量三级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 196, 1)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CO2流量二级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CO2流量二级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 196, 2)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CO2流量低于最小设定流量</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CO2流量低于最小设定流量')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 196, 3)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CO2_MFC断路短路（无信号）</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CO2_MFC断路短路（无信号）')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 196, 4)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CH4流量三级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CH4流量三级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 196, 5)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CH4流量二级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CH4流量二级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 196, 6)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CH4流量低于最小设定流量</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CH4流量低于最小设定流量')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 196, 7)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:CH4_MFC断路短路（无信号）</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:CH4_MFC断路短路（无信号）')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 197, 0)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:N2流量三级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:N2流量三级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 197, 1)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:N2流量二级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:N2流量二级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 197, 2)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:N2流量低于最小设定流量</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:N2流量低于最小设定流量')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 197, 3)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:N2_MFC断路短路（无信号）</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:N2_MFC断路短路（无信号）')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 197, 4)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:空气流量三级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:Air流量三级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 197, 5)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:空气流量二级偏差</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:Air流量二级偏差')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 197, 6)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:空气流量低于最小设定流量</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:Air流量低于最小设定流量')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 197, 7)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:Air_MFC断路短路(无信号)</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:Air_MFC断路短路（无信号）')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 198, 0)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:可燃气体浓度超标</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:可燃气体浓度超标')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 198, 1)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:可燃气体浓度严重超标</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:可燃气体浓度严重超标')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 198, 2)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:环境温度超标</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:环境温度超标')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            alarm = snap7.util.get_bool(self.data, 198, 3)
+            if alarm == 1:
+                self.ui.alarmBox.append('<font color="red">报警提示！！！:伺服报警</font>')
+                itemlist = []
+                item = QStandardItem(timeData)
+                itemlist.append(item)
+                item = QStandardItem('报警提示:伺服报警')
+                itemlist.append(item)
+                self.itemModel_tV.appendRow(itemlist)
+            self.alarmData = self.alarmCurrentData
+        self.PLCDataInput = []
+        for i in range(16):
+            data = snap7.util.get_real(self.data, i * 4)
+            self.PLCDataInput.append(data)
+
+        CVMData = np.array(self.PLCDataInput[8:16])
+        self.ui.pgB_CV1.setValue(CVMData[0])
+        self.ui.l_TEMStove.setText('加热炉温度(℃):%.2f ' % CVMData[2])
+        self.H2Set = self.ui.dSB_SetH2.value()
+        snap7.util.set_real(self.data, 70, self.H2Set)
+        self.CH4Set = self.ui.dSB_SetCH4.value()
+        snap7.util.set_real(self.data, 74, self.CH4Set)
+        self.CO2Set = self.ui.dSB_SetCO2.value()
+        snap7.util.set_real(self.data, 78, self.CO2Set)
+        self.COSet = self.ui.dSB_SetCO.value()
+        snap7.util.set_real(self.data, 90, self.COSet)
+        self.N2Set = self.ui.dSB_SetN2.value()
+        snap7.util.set_real(self.data, 82, self.N2Set)
+        self.AirSet = self.ui.dSB_SetAir.value()
+        snap7.util.set_real(self.data, 86, self.AirSet)
+        N2Time = self.ui.sB_N2Time.value()
+        snap7.util.set_int(self.data, 68, N2Time)
+        N2Flow = self.ui.dSB_N2FlowRate.value()
+        snap7.util.set_real(self.data, 64, N2Flow)
+        H2LimitL = self.ui.dBB_SetMFCH2Low.value()
+        snap7.util.set_real(self.data, 94, H2LimitL)
+        H2LimitH = self.ui.dBB_SetMFCH2High.value()
+        snap7.util.set_real(self.data, 98, H2LimitH)
+        CO2LimitL = self.ui.dBB_SetMFCCO2Low.value()
+        snap7.util.set_real(self.data, 110, CO2LimitL)
+        CO2LimitH = self.ui.dBB_SetMFCCO2High.value()
+        snap7.util.set_real(self.data, 114, CO2LimitH)
+        CH4LimitL = self.ui.dBB_SetMFCCH4Low.value()
+        snap7.util.set_real(self.data, 102, CH4LimitL)
+        CH4LimitH = self.ui.dBB_SetMFCCH4High.value()
+        snap7.util.set_real(self.data, 106, CH4LimitH)
+        COLimitL = self.ui.dBB_SetMFCCOLow.value()
+        snap7.util.set_real(self.data, 134, COLimitL)
+        COLimitH = self.ui.dBB_SetMFCCOHigh.value()
+        snap7.util.set_real(self.data, 138, COLimitH)
+        AirLimitL = self.ui.dBB_SetMFCAirLow.value()
+        snap7.util.set_real(self.data, 126, AirLimitL)
+        AirLimitH = self.ui.dBB_SetMFCAirHigh.value()
+        snap7.util.set_real(self.data, 130, AirLimitH)
+        N2LimitL = self.ui.dBB_SetMFCN2Low.value()
+        snap7.util.set_real(self.data, 118, N2LimitL)
+        N2LimitH = self.ui.dBB_SetMFCN2High.value()
+        snap7.util.set_real(self.data, 122, N2LimitH)
+        SVLimitL = self.ui.dBB_SetSingleVoltLow.value()
+        snap7.util.set_real(self.data, 162, SVLimitL)
+        SVLimitH = self.ui.dBB_SetSingleVoltHigh.value()
+        snap7.util.set_real(self.data, 158, SVLimitH)
+        TAH = self.ui.dBB_SetTempAlarmHigh.value()
+        snap7.util.set_real(self.data, 166, TAH)
+        GasAL = self.ui.dBB_SetTempAlarmLow.value()
+        snap7.util.set_real(self.data, 170, GasAL)
+        GasAH = self.ui.dBB_SetTempAlarmHigh_2.value()
+        snap7.util.set_real(self.data, 174, GasAH)
+        self.H2Input = snap7.util.get_real(self.data, 0)
+        if self.H2Input > 0:
+            self.ui.pgB_H2_DIS.setMaximum(0)
+            self.ui.pgB_Wet.setMaximum(0)
+            self.ui.pgB_Dry.setMaximum(0)
+        else:
+            self.ui.pgB_H2_DIS.setMaximum(1)
+        self.ui.l_H2Dis.setText('H2: %.2f' % self.H2Input)
+        self.CH4Input = snap7.util.get_real(self.data, 4)
+        if self.CH4Input > 0:
+            self.ui.pgB_CH4_DIS.setMaximum(0)
+            self.ui.pgB_Wet.setMaximum(0)
+            self.ui.pgB_Dry.setMaximum(0)
+        else:
+            self.ui.pgB_CH4_DIS.setMaximum(1)
+        self.ui.l_CH4Dis.setText('CH4: %.2f' % self.CH4Input)
+        self.CO2Input = snap7.util.get_real(self.data, 8)
+        if self.CO2Input > 0:
+            self.ui.pgB_CO2_DIS.setMaximum(0)
+            self.ui.pgB_Wet.setMaximum(0)
+            self.ui.pgB_Dry.setMaximum(0)
+        else:
+            self.ui.pgB_CO2_DIS.setMaximum(1)
+        self.ui.l_CO2Dis.setText('CO2: %.2f' % self.CO2Input)
+        self.N2Input = snap7.util.get_real(self.data, 12)
+        if self.N2Input > 0:
+            self.ui.pgB_N2_DIS.setMaximum(0)
+            self.ui.pgB_Wet.setMaximum(0)
+            self.ui.pgB_Dry.setMaximum(0)
+        else:
+            self.ui.pgB_N2_DIS.setMaximum(1)
+        self.ui.l_N2Dis.setText('N2: %.2f' % self.N2Input)
+        self.AirInput = snap7.util.get_real(self.data, 16)
+        if self.AirInput > 0:
+            self.ui.pgB_Air_DIS.setMaximum(0)
+        else:
+            self.ui.pgB_Air_DIS.setMaximum(1)
+        self.ui.l_AirDis.setText('Air: %.2f' % self.AirInput)
+        self.COInput = snap7.util.get_real(self.data, 20)
+        if self.COInput > 0:
+            self.ui.pgB_CO_DIS.setMaximum(0)
+            self.ui.pgB_Wet.setMaximum(0)
+            self.ui.pgB_Dry.setMaximum(0)
+        else:
+            self.ui.pgB_CO_DIS.setMaximum(1)
+        self.ui.l_CO.setText('CO: %.2f' % self.COInput)
+        if self.H2Input == 0 and self.CH4Input == 0 and self.CO2Input == 0 and self.N2Input == 0 and self.N2Input == 0 or self.COInput == 0:
+            self.ui.pgB_Wet.setMaximum(1)
+            self.ui.pgB_Dry.setMaximum(1)
+        self.TempInput = snap7.util.get_real(self.data, 24)
+        self.ui.l_TEMDis.setText('温度(C°): %.2f' % self.TempInput)
+        self.CGCInpout = snap7.util.get_real(self.data, 28)
+        self.ui.l_GasDis.setText('可燃(LEL): %.2f' % self.CGCInpout)
+        self.CGCInpout = snap7.util.get_real(self.data, 28)
+        self.ui.l_GasDis.setText('可燃(LEL): %.2f' % self.CGCInpout)
+        if self.ui.pB_ManualH2.isChecked():
+            self.data[181] = 1
+            self.ui.label_H2.setText('H2 打开')
+            self.ui.pB_ManualH2.setStyleSheet(
+                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_H2.setMaximum(0)
+        else:
+            self.data[181] = 0
+            self.ui.label_H2.setText('H2 关闭')
+            self.ui.pB_ManualH2.setStyleSheet(
+                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_H2.setMaximum(1)
+        if self.ui.pB_ManualCO2.isChecked():
+            self.data[183] = 1
+            self.ui.label_CO2.setText('CO2 打开')
+            self.ui.pB_ManualCO2.setStyleSheet(
+                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_CO2.setMaximum(0)
+        else:
+            self.data[183] = 0
+            self.ui.label_CO2.setText('CO2 关闭')
+            self.ui.pB_ManualCO2.setStyleSheet(
+                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_CO2.setMaximum(1)
+        if self.ui.pB_ManualCH4.isChecked():
+            self.data[182] = 1
+            self.ui.label_CH4.setText('CH4 打开')
+            self.ui.pB_ManualCH4.setStyleSheet(
+                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_CH4.setMaximum(0)
+        else:
+            self.data[182] = 0
+            self.ui.label_CH4.setText('CH4 关闭')
+            self.ui.pB_ManualCH4.setStyleSheet(
+                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_CH4.setMaximum(1)
+        if self.ui.pB_ManualCO.isChecked():
+            self.data[186] = 1
+            self.ui.label_CO.setText('CO 打开')
+            self.ui.pB_ManualCO.setStyleSheet(
+                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_CO.setMaximum(0)
+        else:
+            self.data[186] = 0
+            self.ui.label_CO.setText('CO 关闭')
+            self.ui.pB_ManualCO.setStyleSheet(
+                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_CO.setMaximum(1)
+        if self.ui.pB_ManualN2.isChecked():
+            self.data[184] = 1
+            self.ui.label_N2.setText('N2 打开')
+            self.ui.pB_ManualN2.setStyleSheet(
+                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_N2.setMaximum(0)
+        else:
+            self.data[184] = 0
+            self.ui.label_N2.setText('N2 关闭')
+            self.ui.pB_ManualN2.setStyleSheet(
+                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_N2.setMaximum(1)
+        if self.ui.pB_ManualAir.isChecked():
+            self.data[185] = 1
+            self.ui.label_Air.setText('Air 打开')
+            self.ui.pB_ManualAir.setStyleSheet(
+                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_Air.setMaximum(0)
+        else:
+            self.data[185] = 0
+            self.ui.label_Air.setText('Air 关闭')
+            self.ui.pB_ManualAir.setStyleSheet(
+                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.ui.pgB_Air.setMaximum(1)
+        if self.ui.rB_Wet.isChecked():
+            self.data[187] = 2
+            self.ui.pgB_Wet_DIS.setMaximum(0)
+            self.ui.pgB_Wet_DIS2.setMaximum(0)
+        else:
+            self.ui.pgB_Wet_DIS.setMaximum(1)
+            self.ui.pgB_Wet_DIS2.setMaximum(1)
+        if self.ui.rB_Dry.isChecked():
+            self.data[187] = 1
+            self.ui.pgB_Dry_DIS.setMaximum(0)
+        else:
+            self.ui.pgB_Dry_DIS.setMaximum(1)
+        PumpFlowRate = self.ui.sB_PumpFlowRate.value()
+        PumpFlowRate = PumpFlowRate * 1000
+        snap7.util.set_word(self.data, 282, PumpFlowRate)
+        PumpMaxP = self.ui.sB_PumpMaxP.value()
+        PumpMaxP = PumpMaxP * 10
+        snap7.util.set_word(self.data, 284, PumpMaxP)
+        PumpMinP = self.ui.sB_PumpMinP.value()
+        PumpMinP = PumpMinP * 10
+        snap7.util.set_word(self.data, 286, PumpMinP)
+        if self.ui.rB_PumpStart.isChecked():
+            snap7.util.set_word(self.data, 290, 1)
+        else:
+            snap7.util.set_word(self.data, 290, 0)
+        if self.ui.rB_PumpClean.isChecked():
+            snap7.util.set_word(self.data, 292, 1)
+        else:
+            snap7.util.set_word(self.data, 292, 0)
+        if self.ui.rB_PumpStop.isChecked():
+            snap7.util.set_word(self.data, 294, 1)
+        else:
+            snap7.util.set_word(self.data, 294, 0)
+        EvaHit = self.ui.sB_EvaHit.value()
+        EvaHit = EvaHit * 10
+        snap7.util.set_word(self.data, 240, EvaHit)
+        EvaTrop = self.ui.sB_EvaTrop.value()
+        EvaTrop = EvaTrop * 10
+        snap7.util.set_word(self.data, 242, EvaTrop)
+        if self.ui.cB_EvaHitStart.isChecked():
+            snap7.util.set_word(self.data, 244, 1)
+        else:
+            snap7.util.set_word(self.data, 244, 0)
+        if self.ui.cB_EvaTropStart.isChecked():
+            snap7.util.set_word(self.data, 246, 1)
+        else:
+            snap7.util.set_word(self.data, 246, 0)
+        label_Pump = snap7.util.get_word(self.data, 250)
+        label_Pump = label_Pump / 100
+        self.ui.label_Pump.setText('水泵流量：%.2f mL/min' % label_Pump)
+        label_SOFCHit = snap7.util.get_word(self.data, 220)
+        label_SOFCHit = label_SOFCHit / 10
+        self.ui.label_SOFCHit.setText('加热温度：%.2f C°' % label_SOFCHit)
+        label_SOFCOut = snap7.util.get_word(self.data, 222)
+        label_SOFCOut = label_SOFCOut / 10
+        self.ui.label_SOFCOut.setText('出口温度：%.2f C°' % label_SOFCOut)
+        label_SOFCTrop = snap7.util.get_word(self.data, 224)
+        label_SOFCTrop = label_SOFCTrop / 10
+        self.ui.label_SOFCTrop.setText('伴热温度：%.2f C°' % label_SOFCTrop)
+        self.chart = self.ui.gV_DataDisplay.chart()
+        if self.isVertical:
+            self.ui.alarmBox.append('Can Not Show Charts')
+        else:
+            self.x += self.Ts
+            # bjtime = QDateTime.currentDateTime()
+            # self.dtaxisX.setMin(QDateTime.currentDateTime().addSecs(-5))
+            # self.dtaxisX.setMax(QDateTime.currentDateTime().addSecs(0))
+            if self.seriesH2.count() > 50:
+                self.seriesH2.removePoints(0, self.seriesH2.count() - 50)
+            if self.seriesCH4.count() > 50:
+                self.seriesCH4.removePoints(0, self.seriesCH4.count() - 50)
+            if self.seriesCO2.count() > 50:
+                self.seriesCO2.removePoints(0, self.seriesCO2.count() - 50)
+            if self.seriesN2.count() > 50:
+                self.seriesN2.removePoints(0, self.seriesN2.count() - 50)
+            if self.seriesAIR.count() > 50:
+                self.seriesAIR.removePoints(0, self.seriesAIR.count() - 50)
+            if self.seriesCO.count() > 50:
+                self.seriesCO.removePoints(0, self.seriesCO.count() - 50)
+            if self.seriesCURR.count() > 50:
+                self.seriesCURR.removePoints(0, self.seriesCURR.count() - 50)
+            if self.seriesVOLT.count() > 50:
+                self.seriesVOLT.removePoints(0, self.seriesVOLT.count() - 50)
+            if self.seriesPOW.count() > 50:
+                self.seriesPOW.removePoints(0, self.seriesPOW.count() - 50)
+            if self.seriesCURRD.count() > 50:
+                self.seriesCURRD.removePoints(0, self.seriesCURRD.count() - 50)
+            if self.seriesPOWD.count() > 50:
+                self.seriesPOWD.removePoints(0, self.seriesPOWD.count() - 50)
+            if self.seriesStove.count() > 50:
+                self.seriesStove.removePoints(0, self.seriesPOWD.count() - 50)
+            self.seriesH2.append(self.x, self.PLCDataInput[0])
+            self.seriesCH4.append(self.x, self.PLCDataInput[1])
+            self.seriesCO2.append(self.x, self.PLCDataInput[2])
+            self.seriesN2.append(self.x, self.PLCDataInput[3])
+            self.seriesAIR.append(self.x, self.PLCDataInput[4])
+            self.seriesCO.append(self.x, self.PLCDataInput[5])
+
+            try:
+                self.seriesCURR.append(self.x, float(self.dataList[0]))
+                self.seriesVOLT.append(self.x, float(self.dataList[1]))
+                self.seriesPOW.append(self.x, float(self.dataList[2]))
+                self.seriesCURRD.append(self.x, float(self.dataList[0]) * 1000 / self.Battery_Area)
+                self.seriesPOWD.append(self.x, float(self.dataList[2]) * 1000 / self.Battery_Area)
+            except:
+                print('String TO Float Error')
+
+            self.seriesStove.append(self.x, float(CVMData[2]))
+        self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
 
     # -------------------------------------------------------------
     # 函数名： configResetAuto
     # 功能：自动重置配置
     # -------------------------------------------------------------
     def configResetAuto(self):
-        ORIGIN_CONFIG = '[{"name": "stove", "para": [{"id": 1, "temp": "701", "time": "10"}, {"id": 2, "temp": "702", "time": "20"}], "start": 0}, {"name": "discharge", "para": [{"id": 1, "参与状态": "参与", "过程选择": "充电", "工作模式": "LCC", "开始数值": 1, "递增数值": 0, "单位1": "A", "单步时间": 0, "单位2": "s", "停机依据": "电堆电流", "判断逻辑": "小于", "触发数值": 1, "单位3": "A"}, {"id": 2, "参与状态": "参与", "过程选择": "放电", "工作模式": "CC", "开始数值": 0, "递增数值": 0, "单位1": "A", "单步时间": 0, "单位2": "s", "停机依据": "电堆电流", "判断逻辑": "大于", "触发数值": 0, "单位3": "A"}]}]'
+        ORIGIN_CONFIG = '[{"name": "stove", "para": [{"id": 1, "temp": "701", "time": "10"}, {"id": 2, "temp": "702", "time": "20"}], "start": 0}, {"name": "discharge", "para": [{"id": 1, "参与状态": "参与", "过程选择": "充电", "工作模式": "LCC(A)", "开始数值": 1, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "小于", "触发数值": 1}, {"id": 2, "参与状态": "参与", "过程选择": "放电", "工作模式": "CC(A)", "开始数值": 0, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "大于", "触发数值": 0}]}]'
         with open('config.json', 'w', encoding='utf-8') as f:
             f.write(json.dumps(eval(ORIGIN_CONFIG), ensure_ascii=False))
 
@@ -1230,10 +2172,13 @@ class SOCExpPlatform001(QWidget):
         reply = QMessageBox.question(self, "Alarm", "配置信息重置后不可回退，确认继续么？", QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.No:
             return
-        ORIGIN_CONFIG = '[{"name": "stove", "para": [{"id": 1, "temp": "701", "time": "10"}, {"id": 2, "temp": "702", "time": "20"}], "start": 0}, {"name": "discharge", "para": [{"id": 1, "参与状态": "参与", "过程选择": "充电", "工作模式": "LCC", "开始数值": 1, "递增数值": 0, "单位1": "A", "单步时间": 0, "单位2": "s", "停机依据": "电堆电流", "判断逻辑": "小于", "触发数值": 1, "单位3": "A"}, {"id": 2, "参与状态": "参与", "过程选择": "放电", "工作模式": "CC", "开始数值": 0, "递增数值": 0, "单位1": "A", "单步时间": 0, "单位2": "s", "停机依据": "电堆电流", "判断逻辑": "大于", "触发数值": 0, "单位3": "A"}]}]'
+        ORIGIN_CONFIG = '[{"name": "stove", "para": [{"id": 1, "temp": "701", "time": "10"}, {"id": 2, "temp": "702", "time": "20"}], "start": 0}, {"name": "discharge", "para": [{"id": 1, "参与状态": "参与", "过程选择": "充电", "工作模式": "LCC(A)", "开始数值": 1, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "小于", "触发数值": 1}, {"id": 2, "参与状态": "参与", "过程选择": "放电", "工作模式": "CC(A)", "开始数值": 0, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "大于", "触发数值": 0}]}]'
         with open('config.json', 'w', encoding='utf-8') as f:
             f.write(json.dumps(eval(ORIGIN_CONFIG), ensure_ascii=False))
             self.ui.alarmBox.append('<font color="red">配置信息已重置</font>')
+        self.ui.tV_Discharge.clearContents()
+        self.ui.tV_Stove.clearContents()
+        self.readConfig()
 
     # -------------------------------------------------------------
     # 函数名： helpWindow

@@ -716,17 +716,7 @@ color:black
       </column>
       <column>
        <property name="text">
-        <string>单位</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>单步时间</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>单位</string>
+        <string>单步时间(s)</string>
        </property>
       </column>
       <column>
@@ -744,12 +734,12 @@ color:black
         <string>触发数值</string>
        </property>
       </column>
-      <column>
-       <property name="text">
-        <string>单位</string>
-       </property>
-      </column>
       <item row="0" column="0">
+       <property name="text">
+        <string/>
+       </property>
+      </item>
+      <item row="0" column="2">
        <property name="text">
         <string/>
        </property>
@@ -1749,7 +1739,7 @@ color:black
 </string>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -1776,28 +1766,15 @@ color:black
      <attribute name="toolTip">
       <string>显示操作日志</string>
      </attribute>
-     <widget class="QTableWidget" name="tV_log">
+     <widget class="QTableView" name="tV_log">
       <property name="geometry">
        <rect>
-        <x>0</x>
-        <y>0</y>
-        <width>461</width>
-        <height>121</height>
+        <x>10</x>
+        <y>1</y>
+        <width>441</width>
+        <height>111</height>
        </rect>
       </property>
-      <property name="styleSheet">
-       <string notr="true">color:black</string>
-      </property>
-      <column>
-       <property name="text">
-        <string>时间</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>描述</string>
-       </property>
-      </column>
      </widget>
     </widget>
    </widget>
@@ -3261,6 +3238,22 @@ border-image:url(:/images/gate2.png)
      <string>0.00</string>
     </property>
    </widget>
+   <widget class="QLabel" name="l_caution">
+    <property name="geometry">
+     <rect>
+      <x>230</x>
+      <y>80</y>
+      <width>21</width>
+      <height>21</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+    <property name="text">
+     <string/>
+    </property>
+   </widget>
    <zorder>label_battery</zorder>
    <zorder>label_Mixer</zorder>
    <zorder>label_Tank</zorder>
@@ -3341,6 +3334,7 @@ border-image:url(:/images/gate2.png)
    <zorder>l_N2Dis</zorder>
    <zorder>l_AirDis</zorder>
    <zorder>pB_ManualH2</zorder>
+   <zorder>l_caution</zorder>
   </widget>
   <widget class="QLabel" name="label_copyright">
    <property name="geometry">
