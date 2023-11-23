@@ -31,7 +31,7 @@ import help
 
 
 class RunThread(QThread):
-    _signal = pyqtSignal(str)
+    signal = pyqtSignal(str)
 
     def __init__(self, master_):
         super().__init__()
@@ -41,9 +41,10 @@ class RunThread(QThread):
         try:
             self.master.write('MEAS:CURR?;:MEAS:VOLT?;:MEAS:POW?')
             data = self.master.read()
-            self._signal.emit(data)
-        except:
+            self.signal.emit(data)
+        except Exception as e:
             print('Visa Error')
+            print(e)
 
 
 # -------------------------------------------------------------
@@ -206,7 +207,7 @@ class SOCExpPlatform001(QWidget):
             self.plc_flag = 1
         except Exception as e:
             self.ui.l_ElcLoad.setText('未连接')
-            self.data = bytearray([0 for i in range(300)])
+            self.data = bytearray([0 for _ in range(300)])
             print('Fail to Connect PLC')
             self.ui.alarmBox.append('<font color="red">PLC连接失败！请检查PLC</font>')
             self.ui.alarmBox.append(str(e))
@@ -238,32 +239,45 @@ class SOCExpPlatform001(QWidget):
         self.ui.l_GasDis.setText('可燃(LEL): %.2f' % self.CGCInpout)
         self.GasPressure = snap7.util.get_real(self.data, 36)
         self.ui.l_GasPressure.setText('压力(N): %.2f' % self.GasPressure)
+        self.H2Set = snap7.util.get_real(self.data, 70)
+        self.ui.dSB_SetH2.setValue(self.H2Set)
+        self.CH4Set = snap7.util.get_real(self.data, 74)
+        self.ui.dSB_SetCH4.setValue(self.CH4Set)
+        self.CO2Set = snap7.util.get_real(self.data, 78)
+        self.ui.dSB_SetCO2.setValue(self.CO2Set)
+        self.COSet = snap7.util.get_real(self.data, 90)
+        self.ui.dSB_SetCO.setValue(self.COSet)
+        self.N2Set = snap7.util.get_real(self.data, 82)
+        self.ui.dSB_SetN2.setValue(self.N2Set)
+        self.AirSet = snap7.util.get_real(self.data, 86)
+        self.ui.dSB_SetAir.setValue(self.AirSet)
+        N2Time = snap7.util.get_int(self.data, 68)
+        self.ui.sB_N2Time.setValue(N2Time)
+        N2Flow = snap7.util.get_real(self.data, 64)
+        self.ui.dSB_N2FlowRate.setValue(N2Flow)
         H2LimitL = snap7.util.get_real(self.data, 94)
-        self.dBB_SetMFCH2Low = H2LimitL
         H2LimitH = snap7.util.get_real(self.data, 98)
-        self.dBB_SetMFCH2High = H2LimitH
         CO2LimitL = snap7.util.get_real(self.data, 110)
-        self.dBB_SetMFCCO2Low = CO2LimitL
         CO2LimitH = snap7.util.get_real(self.data, 114)
-        self.dBB_SetMFCCO2High = CO2LimitH
         CH4LimitL = snap7.util.get_real(self.data, 102)
-        self.dBB_SetMFCCH4Low = CH4LimitL
         CH4LimitH = snap7.util.get_real(self.data, 106)
-        self.dBB_SetMFCCH4High = CH4LimitH
         COLimitL = snap7.util.get_real(self.data, 134)
-        self.dBB_SetMFCCOLow = COLimitL
         COLimitH = snap7.util.get_real(self.data, 138)
-        self.dBB_SetMFCCOHigh = COLimitH
         AirLimitL = snap7.util.get_real(self.data, 126)
-        self.dBB_SetMFCAirLow = AirLimitL
         AirLimitH = snap7.util.get_real(self.data, 130)
-        self.dBB_SetMFCAirHigh = AirLimitH
         N2LimitL = snap7.util.get_real(self.data, 118)
-        self.dBB_SetMFCN2Low = N2LimitL
         N2LimitH = snap7.util.get_real(self.data, 122)
-        self.dBB_SetMFCN2High = N2LimitH
         self.MFCData = (H2LimitL, H2LimitH, CO2LimitL, CO2LimitH, CH4LimitL, CH4LimitH, COLimitL, COLimitH, AirLimitL, AirLimitH, N2LimitL, N2LimitH)
         self.MFCDict = self.MFCInitVal()
+        SVLimitL = snap7.util.get_real(self.data, 162)
+        SVLimitH = snap7.util.get_real(self.data, 158)
+        TAH = snap7.util.get_real(self.data, 166)
+        self.ui.dBB_SetTempAlarmHigh.setValue(TAH)
+        GasAL = snap7.util.get_real(self.data, 170)
+        self.ui.dBB_SetFireAlarmLow.setValue(GasAL)
+        GasAH = snap7.util.get_real(self.data, 174)
+        self.ui.dBB_SetFireAlarmHigh.setValue(GasAH)
+        self.ui.singleVolt = (SVLimitL, SVLimitH)
         Stove = snap7.util.get_real(self.data, 208)
         self.ui.l_TEMStove.setText('加热炉温度(℃): %.2f' % Stove)
         T_Wet = snap7.util.get_real(self.data, 200)
@@ -588,10 +602,10 @@ class SOCExpPlatform001(QWidget):
     def StoveHeating(self):
         self.StoveTime = self.StoveTime + 1
         self.ui.tV_Stove.selectRow(self.StoveHeatBuff)
-        timebuff = self.ui.tV_Stove.item(self.StoveHeatBuff, 1)
-        time = int(timebuff.text())
+        time_buff = self.ui.tV_Stove.item(self.StoveHeatBuff, 1)
+        heat_time = int(time_buff.text())
         self.StoveTempStart = self.StoveTempStart + self.StoveMid
-        if time == self.StoveTime:
+        if heat_time == self.StoveTime:
             self.StoveHeatBuff = self.StoveHeatBuff + 1
             if self.StoveHeatBuff == self.StoveHeatIndex:
                 self.StoveNotHeat()
@@ -651,7 +665,7 @@ class SOCExpPlatform001(QWidget):
             "'日期'", "'记录时间（24小时）'", "'累计时间'", "'电流'", "'电压'",
             "'功率'", "'电流密度'", "'功率密度'", "'单体电压'", "'加压压力'", "'加热炉温度'",
             "'H2流量'", "'CH4流量'", "'CO2流量'", "'N2流量'", "'Air流量'", "'CO流量'"]
-        with open((self.filename), 'w', newline='', encoding='UTF-8-sig') as (file):
+        with open(self.filename, 'w', newline='', encoding='UTF-8-sig') as (file):
             f_csv = csv.writer(file)
             f_csv.writerow(headers)
             f_csv.writerow(headers1)
@@ -712,11 +726,11 @@ class SOCExpPlatform001(QWidget):
         self.ui.l_DataSave.setStyleSheet('color:white')
 
     # -------------------------------------------------------------
-    # 函数名： on_pB_DataAnalize_clicked
+    # 函数名： on_pB_DataAnalyze_clicked
     # 功能： 分析数据
     # -------------------------------------------------------------
     @pyqtSlot()
-    def on_pB_DataAnalize_clicked(self):
+    def on_pB_DataAnalyze_clicked(self):
         self.pltImage()
 
     # -------------------------------------------------------------
@@ -728,22 +742,22 @@ class SOCExpPlatform001(QWidget):
         filename, flt = QFileDialog.getOpenFileName(self, '读取文件', curPath, '数据文件(*.csv);;所有文件(*.*)')
         if filename == '':
             return
-        t0 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.str_), delimiter=',', skiprows=2, usecols=2)
+        t0 = np.loadtxt(filename, encoding='Latin-1', dtype=np.str_, delimiter=',', skiprows=2, usecols=2)
         t0 = [datetime.strptime(i, '%H:%M:%S.%f') for i in t0]
-        t1 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=3)
-        t2 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=4)
-        t3 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=5)
-        t4 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=6)
-        t5 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=7)
-        t6 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=8)
-        t7 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=9)
-        t8 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=10)
-        t9 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=11)
-        t10 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=12)
-        t11 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=13)
-        t12 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=14)
-        t13 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=15)
-        t14 = np.loadtxt(filename, encoding='Latin-1', dtype=(np.float32), delimiter=',', skiprows=2, usecols=16)
+        t1 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=3)
+        t2 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=4)
+        t3 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=5)
+        t4 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=6)
+        t5 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=7)
+        t6 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=8)
+        t7 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=9)
+        t8 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=10)
+        t9 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=11)
+        t10 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=12)
+        t11 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=13)
+        t12 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=14)
+        t13 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=15)
+        t14 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=16)
         fig, ax = plt.subplots()
         plt.xticks(rotation=45)
         plt.rcParams['font.sans-serif'] = ['SimHei']
@@ -769,7 +783,7 @@ class SOCExpPlatform001(QWidget):
         self.labels = [str(line.get_label()) for line in self.lines]
         visibility = [line.get_visible() for line in self.lines]
         self.check = CheckButtons(rax, self.labels, visibility)
-        plt.legend((self.lines), (self.labels), bbox_to_anchor=(8.7, 1), loc='upper left', borderaxespad=0)
+        plt.legend(self.lines, self.labels, bbox_to_anchor=(8.7, 1), loc='upper left', borderaxespad=0)
         self.check.on_clicked(self.func)
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
@@ -1281,7 +1295,7 @@ class SOCExpPlatform001(QWidget):
                 self.res = self.rm.open_resource('ASRL2::INSTR')
                 print(type(self.res))
                 self.Thread = RunThread(self.res)
-                self.Thread._signal.connect(self.ReadDisCharge)
+                self.Thread.signal.connect(self.ReadDisCharge)
                 self.res.write('*IDN?')
                 read = self.res.read()
                 readList = read.split(',')
@@ -1290,7 +1304,7 @@ class SOCExpPlatform001(QWidget):
                 self.res.write('SYST:REM')
                 self.res.write('SYST:SENS ON')
                 self.ui.pB_DisCharger.setText('断开电子负载')
-            except:
+            except Exception:
                 self.ui.alarmBox.append('<font color="red">无法连接电子负载，请检查</font>')
 
         else:
@@ -1310,7 +1324,7 @@ class SOCExpPlatform001(QWidget):
                 self.res = self.rm.open_resource('ASRL3::INSTR')
                 print(type(self.res))
                 self.Thread_Ch = RunThread(self.res)
-                self.Thread_Ch._signal.connect(self.readCharge)
+                self.Thread_Ch.signal.connect(self.readCharge)
                 self.res.write('*IDN?')
                 read = self.res.read()
                 readList = read.split(',')
@@ -1624,7 +1638,7 @@ class SOCExpPlatform001(QWidget):
         else:
             self.ui.l_caution.setStyleSheet('image:url(:/images/img/caution.png)')
         CylinderHome = snap7.util.get_bool(self.data, 199, 0)
-        if CylinderHome == True:
+        if CylinderHome:
             self.GassPressNotHome()
         if self.alarmCurrentData != self.alarmData:
             alarm = snap7.util.get_bool(self.data, 195, 0)
@@ -1887,7 +1901,7 @@ class SOCExpPlatform001(QWidget):
             self.PLCDataInput.append(data)
 
         CVMData = np.array(self.PLCDataInput[8:16])
-        self.ui.pgB_CV1.setValue(CVMData[0])
+        self.ui.label_battery.setValue(CVMData[0])
         self.ui.l_TEMStove.setText('加热炉温度(℃):%.2f ' % CVMData[2])
         self.H2Set = self.ui.dSB_SetH2.value()
         snap7.util.set_real(self.data, 70, self.H2Set)
@@ -1929,65 +1943,77 @@ class SOCExpPlatform001(QWidget):
         snap7.util.set_real(self.data, 118, N2LimitL)
         N2LimitH = self.MFCDict['N2L']
         snap7.util.set_real(self.data, 122, N2LimitH)
-        SVLimitL = self.ui.dBB_SetSingleVoltLow.value()
+        SVLimitL = self.singleVolt[0]
         snap7.util.set_real(self.data, 162, SVLimitL)
-        SVLimitH = self.ui.dBB_SetSingleVoltHigh.value()
+        SVLimitH = self.singleVolt[1]
         snap7.util.set_real(self.data, 158, SVLimitH)
         TAH = self.ui.dBB_SetTempAlarmHigh.value()
         snap7.util.set_real(self.data, 166, TAH)
-        GasAL = self.ui.dBB_SetTempAlarmLow.value()
+        GasAL = self.ui.dBB_SetFireAlarmLow.value()
         snap7.util.set_real(self.data, 170, GasAL)
-        GasAH = self.ui.dBB_SetTempAlarmHigh_2.value()
+        GasAH = self.ui.dBB_SetFireAlarmHigh.value()
         snap7.util.set_real(self.data, 174, GasAH)
         self.H2Input = snap7.util.get_real(self.data, 0)
         if self.H2Input > 0:
-            self.ui.pgB_H2_DIS.setMaximum(0)
-            self.ui.pgB_Wet.setMaximum(0)
-            self.ui.pgB_Dry.setMaximum(0)
+            self.tubework(self.ui.pgB_H2_2, 1, 1)
+            self.tubework(self.ui.pgB_Wet_1, 1, 1)
+            self.tubework(self.ui.pgB_Dry_1, 1, 1)
         else:
-            self.ui.pgB_H2_DIS.setMaximum(1)
+            self.tubework(self.ui.pgB_H2_2, 0, 1)
         self.ui.l_H2Dis.setText('H2: %.2f' % self.H2Input)
         self.CH4Input = snap7.util.get_real(self.data, 4)
         if self.CH4Input > 0:
-            self.ui.pgB_CH4_DIS.setMaximum(0)
-            self.ui.pgB_Wet.setMaximum(0)
-            self.ui.pgB_Dry.setMaximum(0)
+            self.tubework(self.ui.pgB_CH4_2, 1, 1)
+            self.tubework(self.ui.pgB_Wet_1, 1, 1)
+            self.tubework(self.ui.pgB_Dry_1, 1, 1)
         else:
-            self.ui.pgB_CH4_DIS.setMaximum(1)
+            self.tubework(self.ui.pgB_CH4_2, 0, 1)
         self.ui.l_CH4Dis.setText('CH4: %.2f' % self.CH4Input)
         self.CO2Input = snap7.util.get_real(self.data, 8)
         if self.CO2Input > 0:
-            self.ui.pgB_CO2_DIS.setMaximum(0)
-            self.ui.pgB_Wet.setMaximum(0)
-            self.ui.pgB_Dry.setMaximum(0)
+            self.tubework(self.ui.pgB_CO2_2, 1, 1)
+            self.tubework(self.ui.pgB_Wet_1, 1, 1)
+            self.tubework(self.ui.pgB_Dry_1, 1, 1)
         else:
-            self.ui.pgB_CO2_DIS.setMaximum(1)
+            self.tubework(self.ui.pgB_CO2_2, 0, 1)
         self.ui.l_CO2Dis.setText('CO2: %.2f' % self.CO2Input)
         self.N2Input = snap7.util.get_real(self.data, 12)
         if self.N2Input > 0:
-            self.ui.pgB_N2_DIS.setMaximum(0)
-            self.ui.pgB_Wet.setMaximum(0)
-            self.ui.pgB_Dry.setMaximum(0)
+            self.tubework(self.ui.pgB_N2_2, 1, 1)
+            self.tubework(self.ui.pgB_Wet_1, 1, 1)
+            self.tubework(self.ui.pgB_Dry_1, 1, 1)
         else:
-            self.ui.pgB_N2_DIS.setMaximum(1)
+            self.tubework(self.ui.pgB_N2_2, 0, 1)
         self.ui.l_N2Dis.setText('N2: %.2f' % self.N2Input)
         self.AirInput = snap7.util.get_real(self.data, 16)
         if self.AirInput > 0:
-            self.ui.pgB_Air_DIS.setMaximum(0)
+            self.tubework(self.ui.pgB_AIR_2, 1, 1)
+            self.tubework(self.ui.pgB_AIR_3, 1, 1)
+            self.tubework(self.ui.pgB_AIR_4, 1, 1)
+            self.tubework(self.ui.pgB_AIR_5, 1, 1)
+            self.tubework(self.ui.pgB_AIR_6, 1, 1)
+            self.tubework(self.ui.pgB_AIR_7, 1, 1)
+            self.tubework(self.ui.pgB_AIR_8, 1, 0)
         else:
-            self.ui.pgB_Air_DIS.setMaximum(1)
+            self.tubework(self.ui.pgB_AIR_2, 0, 1)
+            self.tubework(self.ui.pgB_AIR_3, 0, 1)
+            self.tubework(self.ui.pgB_AIR_4, 0, 1)
+            self.tubework(self.ui.pgB_AIR_5, 0, 1)
+            self.tubework(self.ui.pgB_AIR_6, 0, 1)
+            self.tubework(self.ui.pgB_AIR_7, 0, 1)
+            self.tubework(self.ui.pgB_AIR_8, 0, 0)
         self.ui.l_AirDis.setText('Air: %.2f' % self.AirInput)
         self.COInput = snap7.util.get_real(self.data, 20)
         if self.COInput > 0:
-            self.ui.pgB_CO_DIS.setMaximum(0)
-            self.ui.pgB_Wet.setMaximum(0)
-            self.ui.pgB_Dry.setMaximum(0)
+            self.tubework(self.ui.pgB_CO_2, 1, 1)
+            self.tubework(self.ui.pgB_Wet_1, 1, 1)
+            self.tubework(self.ui.pgB_Dry_1, 1, 1)
         else:
-            self.ui.pgB_CO_DIS.setMaximum(1)
+            self.tubework(self.ui.pgB_CO_2, 0, 1)
         self.ui.l_CO.setText('CO: %.2f' % self.COInput)
         if self.H2Input == 0 and self.CH4Input == 0 and self.CO2Input == 0 and self.N2Input == 0 and self.N2Input == 0 or self.COInput == 0:
-            self.ui.pgB_Wet.setMaximum(1)
-            self.ui.pgB_Dry.setMaximum(1)
+            self.tubework(self.ui.pgB_Wet_1, 0, 1)
+            self.tubework(self.ui.pgB_Dry_1, 0, 1)
         self.TempInput = snap7.util.get_real(self.data, 24)
         self.ui.l_TEMDis.setText('温度(C°): %.2f' % self.TempInput)
         self.CGCInpout = snap7.util.get_real(self.data, 28)
@@ -1996,135 +2022,124 @@ class SOCExpPlatform001(QWidget):
         self.ui.l_GasDis.setText('可燃(LEL): %.2f' % self.CGCInpout)
         if self.ui.pB_ManualH2.isChecked():
             self.data[181] = 1
-            self.ui.label_H2.setText('H2 打开')
-            self.ui.pB_ManualH2.setStyleSheet(
-                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_H2.setMaximum(0)
+            # self.ui.label_H2.setText('H2 打开')
+            # self.ui.pB_ManualH2.setStyleSheet(
+            #     'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_H2_1, 1, 1)
         else:
             self.data[181] = 0
-            self.ui.label_H2.setText('H2 关闭')
-            self.ui.pB_ManualH2.setStyleSheet(
-                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_H2.setMaximum(1)
+            # self.ui.label_H2.setText('H2 关闭')
+            # self.ui.pB_ManualH2.setStyleSheet(
+            #     'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_H2_1, 0, 1)
         if self.ui.pB_ManualCO2.isChecked():
             self.data[183] = 1
-            self.ui.label_CO2.setText('CO2 打开')
-            self.ui.pB_ManualCO2.setStyleSheet(
-                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_CO2.setMaximum(0)
+            # self.ui.label_CO2.setText('CO2 打开')
+            # self.ui.pB_ManualCO2.setStyleSheet(
+            #     'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_CO2_1, 1, 1)
         else:
             self.data[183] = 0
-            self.ui.label_CO2.setText('CO2 关闭')
-            self.ui.pB_ManualCO2.setStyleSheet(
-                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_CO2.setMaximum(1)
+            # self.ui.label_CO2.setText('CO2 关闭')
+            # self.ui.pB_ManualCO2.setStyleSheet(
+            #     'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_CO2_1, 0, 1)
         if self.ui.pB_ManualCH4.isChecked():
             self.data[182] = 1
-            self.ui.label_CH4.setText('CH4 打开')
-            self.ui.pB_ManualCH4.setStyleSheet(
-                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_CH4.setMaximum(0)
+            # self.ui.label_CH4.setText('CH4 打开')
+            # self.ui.pB_ManualCH4.setStyleSheet(
+            #     'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_CH4_1, 1, 1)
         else:
             self.data[182] = 0
-            self.ui.label_CH4.setText('CH4 关闭')
-            self.ui.pB_ManualCH4.setStyleSheet(
-                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_CH4.setMaximum(1)
+            # self.ui.label_CH4.setText('CH4 关闭')
+            # self.ui.pB_ManualCH4.setStyleSheet(
+            #     'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_CH4_1, 0, 1)
         if self.ui.pB_ManualCO.isChecked():
             self.data[186] = 1
-            self.ui.label_CO.setText('CO 打开')
-            self.ui.pB_ManualCO.setStyleSheet(
-                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_CO.setMaximum(0)
+            # self.ui.label_CO.setText('CO 打开')
+            # self.ui.pB_ManualCO.setStyleSheet(
+            #     'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_CO_1, 1, 1)
         else:
             self.data[186] = 0
-            self.ui.label_CO.setText('CO 关闭')
-            self.ui.pB_ManualCO.setStyleSheet(
-                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_CO.setMaximum(1)
+            # self.ui.label_CO.setText('CO 关闭')
+            # self.ui.pB_ManualCO.setStyleSheet(
+            #     'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_CO_1, 0, 1)
         if self.ui.pB_ManualN2.isChecked():
             self.data[184] = 1
-            self.ui.label_N2.setText('N2 打开')
-            self.ui.pB_ManualN2.setStyleSheet(
-                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_N2.setMaximum(0)
+            # self.ui.label_N2.setText('N2 打开')
+            # self.ui.pB_ManualN2.setStyleSheet(
+            #     'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_N2_1, 1, 1)
         else:
             self.data[184] = 0
-            self.ui.label_N2.setText('N2 关闭')
-            self.ui.pB_ManualN2.setStyleSheet(
-                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_N2.setMaximum(1)
-        if self.ui.pB_ManualAir.isChecked():
+            # self.ui.label_N2.setText('N2 关闭')
+            # self.ui.pB_ManualN2.setStyleSheet(
+            #     'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_CH4_1, 0, 1)
+        if self.ui.pB_ManualAIR.isChecked():
             self.data[185] = 1
-            self.ui.label_Air.setText('Air 打开')
-            self.ui.pB_ManualAir.setStyleSheet(
-                'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_Air.setMaximum(0)
+            # self.ui.label_Air.setText('Air 打开')
+            # self.ui.pB_ManualAIR.setStyleSheet(
+            #     'QPushButton{background:green;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_AIR_1, 1, 1)
         else:
             self.data[185] = 0
-            self.ui.label_Air.setText('Air 关闭')
-            self.ui.pB_ManualAir.setStyleSheet(
-                'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
-            self.ui.pgB_Air.setMaximum(1)
+            # self.ui.label_Air.setText('Air 关闭')
+            # self.ui.pB_ManualAIR.setStyleSheet(
+            #     'QPushButton{background:transparent;border-radius:5px;}QPushButton:hover{background:green;}')
+            self.tubework(self.ui.pgB_AIR_1, 0, 1)
         if self.ui.rB_Wet.isChecked():
             self.data[187] = 2
-            self.ui.pgB_Wet_DIS.setMaximum(0)
-            self.ui.pgB_Wet_DIS2.setMaximum(0)
+            self.tubework(self.ui.pgB_Wet_2, 1, 1)
+            self.tubework(self.ui.pgB_Wet_3, 1, 1)
+            self.tubework(self.ui.pgB_Wet_4, 1, 0)
+            self.tubework(self.ui.pgB_Wet_5, 1, 0)
+            self.tubework(self.ui.pgB_IN, 1, 0)
+            self.ui.pB_ManualWet.setStyleSheet('image:url(:/images/gate2.png)')
         else:
-            self.ui.pgB_Wet_DIS.setMaximum(1)
-            self.ui.pgB_Wet_DIS2.setMaximum(1)
+            self.tubework(self.ui.pgB_Wet_2, 0, 1)
+            self.tubework(self.ui.pgB_Wet_3, 0, 1)
+            self.tubework(self.ui.pgB_Wet_4, 0, 0)
+            self.tubework(self.ui.pgB_Wet_5, 0, 0)
+            self.tubework(self.ui.pgB_IN, 0, 0)
         if self.ui.rB_Dry.isChecked():
             self.data[187] = 1
-            self.ui.pgB_Dry_DIS.setMaximum(0)
+            self.tubework(self.ui.pgB_Dry_2, 1, 1)
+            self.tubework(self.ui.pgB_Dry_3, 1, 1)
+            self.tubework(self.ui.pgB_Dry_4, 1, 1)
+            self.tubework(self.ui.pgB_IN, 1, 0)
+            self.ui.pB_ManualDry.setStyleSheet('image:url(:/images/gate2.png)')
         else:
-            self.ui.pgB_Dry_DIS.setMaximum(1)
-        PumpFlowRate = self.ui.sB_PumpFlowRate.value()
-        PumpFlowRate = PumpFlowRate * 1000
-        snap7.util.set_word(self.data, 282, PumpFlowRate)
-        PumpMaxP = self.ui.sB_PumpMaxP.value()
-        PumpMaxP = PumpMaxP * 10
-        snap7.util.set_word(self.data, 284, PumpMaxP)
-        PumpMinP = self.ui.sB_PumpMinP.value()
-        PumpMinP = PumpMinP * 10
-        snap7.util.set_word(self.data, 286, PumpMinP)
-        if self.ui.rB_PumpStart.isChecked():
-            snap7.util.set_word(self.data, 290, 1)
-        else:
-            snap7.util.set_word(self.data, 290, 0)
-        if self.ui.rB_PumpClean.isChecked():
-            snap7.util.set_word(self.data, 292, 1)
-        else:
-            snap7.util.set_word(self.data, 292, 0)
-        if self.ui.rB_PumpStop.isChecked():
-            snap7.util.set_word(self.data, 294, 1)
-        else:
-            snap7.util.set_word(self.data, 294, 0)
-        EvaHit = self.ui.sB_EvaHit.value()
-        EvaHit = EvaHit * 10
-        snap7.util.set_word(self.data, 240, EvaHit)
-        EvaTrop = self.ui.sB_EvaTrop.value()
-        EvaTrop = EvaTrop * 10
-        snap7.util.set_word(self.data, 242, EvaTrop)
-        if self.ui.cB_EvaHitStart.isChecked():
-            snap7.util.set_word(self.data, 244, 1)
-        else:
-            snap7.util.set_word(self.data, 244, 0)
-        if self.ui.cB_EvaTropStart.isChecked():
-            snap7.util.set_word(self.data, 246, 1)
-        else:
-            snap7.util.set_word(self.data, 246, 0)
-        label_Pump = snap7.util.get_word(self.data, 250)
-        label_Pump = label_Pump / 100
-        self.ui.label_Pump.setText('水泵流量：%.2f mL/min' % label_Pump)
-        label_SOFCHit = snap7.util.get_word(self.data, 220)
-        label_SOFCHit = label_SOFCHit / 10
-        self.ui.label_SOFCHit.setText('加热温度：%.2f C°' % label_SOFCHit)
-        label_SOFCOut = snap7.util.get_word(self.data, 222)
-        label_SOFCOut = label_SOFCOut / 10
-        self.ui.label_SOFCOut.setText('出口温度：%.2f C°' % label_SOFCOut)
-        label_SOFCTrop = snap7.util.get_word(self.data, 224)
-        label_SOFCTrop = label_SOFCTrop / 10
-        self.ui.label_SOFCTrop.setText('伴热温度：%.2f C°' % label_SOFCTrop)
+            self.tubework(self.ui.pgB_Dry_2, 0, 1)
+            self.tubework(self.ui.pgB_Dry_3, 0, 1)
+            self.tubework(self.ui.pgB_Dry_4, 0, 1)
+            if not self.ui.rB_Wet.isChecked():
+                self.tubework(self.ui.pgB_IN, 0, 0)
+        # PumpFlowRate = self.ui.sB_PumpFlowRate.value()
+        # PumpFlowRate = PumpFlowRate * 1000
+        # snap7.util.set_word(self.data, 282, PumpFlowRate)
+        # PumpMaxP = self.ui.sB_PumpMaxP.value()
+        # PumpMaxP = PumpMaxP * 10
+        # snap7.util.set_word(self.data, 284, PumpMaxP)
+        # PumpMinP = self.ui.sB_PumpMinP.value()
+        # PumpMinP = PumpMinP * 10
+        # snap7.util.set_word(self.data, 286, PumpMinP)
+        # label_Pump = snap7.util.get_word(self.data, 250)
+        # label_Pump = label_Pump / 100
+        # self.ui.label_Pump.setText('水泵流量：%.2f mL/min' % label_Pump)
+        # label_SOFCHit = snap7.util.get_word(self.data, 220)
+        # label_SOFCHit = label_SOFCHit / 10
+        # self.ui.label_SOFCHit.setText('加热温度：%.2f C°' % label_SOFCHit)
+        # label_SOFCOut = snap7.util.get_word(self.data, 222)
+        # label_SOFCOut = label_SOFCOut / 10
+        # self.ui.label_SOFCOut.setText('出口温度：%.2f C°' % label_SOFCOut)
+        # label_SOFCTrop = snap7.util.get_word(self.data, 224)
+        # label_SOFCTrop = label_SOFCTrop / 10
+        # self.ui.label_SOFCTrop.setText('伴热温度：%.2f C°' % label_SOFCTrop)
         self.chart = self.ui.gV_DataDisplay.chart()
         if self.isVertical:
             self.ui.alarmBox.append('Can Not Show Charts')
@@ -2170,7 +2185,7 @@ class SOCExpPlatform001(QWidget):
                 self.seriesPOW.append(self.x, float(self.dataList[2]))
                 self.seriesCURRD.append(self.x, float(self.dataList[0]) * 1000 / self.Battery_Area)
                 self.seriesPOWD.append(self.x, float(self.dataList[2]) * 1000 / self.Battery_Area)
-            except:
+            except Exception:
                 print('String TO Float Error')
 
             self.seriesStove.append(self.x, float(CVMData[2]))
@@ -2270,18 +2285,18 @@ class MFCWindow(QDialog):
         self.ui.Pb_OKMFC.clicked.connect(self.setMFCInfo)
 
     def initMFCWindow(self, data):
-        self.ui.dBB_SetMFCH2Low = data[0]
-        self.ui.dBB_SetMFCH2High = data[1]
-        self.ui.dBB_SetMFCCO2Low = data[2]
-        self.ui.dBB_SetMFCCO2LHigh = data[3]
-        self.ui.dBB_SetMFCCH4Low = data[4]
-        self.ui.dBB_SetMFCCH4LHigh = data[5]
-        self.ui.dBB_SetMFCCOLow = data[6]
-        self.ui.dBB_SetMFCCOLHigh = data[7]
-        self.ui.dBB_SetMFCAirLow = data[8]
-        self.ui.dBB_SetMFCAirLHigh = data[9]
-        self.ui.dBB_SetMFCN2Low = data[10]
-        self.ui.dBB_SetMFCN2LHigh = data[11]
+        self.ui.dBB_SetMFCH2Low.setValue(data[0])
+        self.ui.dBB_SetMFCH2High.setValue(data[1])
+        self.ui.dBB_SetMFCCO2Low.setValue(data[2])
+        self.ui.dBB_SetMFCCO2High.setValue(data[3])
+        self.ui.dBB_SetMFCCH4Low.setValue(data[4])
+        self.ui.dBB_SetMFCCH4High.setValue(data[5])
+        self.ui.dBB_SetMFCCOLow.setValue(data[6])
+        self.ui.dBB_SetMFCCOHigh.setValue(data[7])
+        self.ui.dBB_SetMFCAirLow.setValue(data[8])
+        self.ui.dBB_SetMFCAirHigh.setValue(data[9])
+        self.ui.dBB_SetMFCN2Low.setValue(data[10])
+        self.ui.dBB_SetMFCN2High.setValue(data[11])
         pass
 
     def setMFCInfo(self):

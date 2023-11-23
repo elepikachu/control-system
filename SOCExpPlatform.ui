@@ -418,9 +418,9 @@ color:black
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>385</y>
+      <y>379</y>
       <width>601</width>
-      <height>275</height>
+      <height>281</height>
      </rect>
     </property>
     <property name="title">
@@ -828,10 +828,10 @@ color:black
     <widget class="QTableWidget" name="tV_Stove">
      <property name="geometry">
       <rect>
-       <x>10</x>
+       <x>8</x>
        <y>20</y>
-       <width>191</width>
-       <height>111</height>
+       <width>194</width>
+       <height>131</height>
       </rect>
      </property>
      <property name="styleSheet">
@@ -841,7 +841,7 @@ color:black
       <number>15</number>
      </property>
      <attribute name="horizontalHeaderDefaultSectionSize">
-      <number>75</number>
+      <number>77</number>
      </attribute>
      <attribute name="verticalHeaderDefaultSectionSize">
       <number>25</number>
@@ -900,7 +900,7 @@ color:black
      <property name="geometry">
       <rect>
        <x>20</x>
-       <y>190</y>
+       <y>195</y>
        <width>75</width>
        <height>23</height>
       </rect>
@@ -915,8 +915,8 @@ color:black
     <widget class="QPushButton" name="bB_Stove_E">
      <property name="geometry">
       <rect>
-       <x>110</x>
-       <y>190</y>
+       <x>115</x>
+       <y>195</y>
        <width>75</width>
        <height>23</height>
       </rect>
@@ -932,7 +932,7 @@ color:black
      <property name="geometry">
       <rect>
        <x>80</x>
-       <y>148</y>
+       <y>162</y>
        <width>51</width>
        <height>21</height>
       </rect>
@@ -945,7 +945,7 @@ color:black
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>150</y>
+       <y>165</y>
        <width>71</width>
        <height>16</height>
       </rect>
@@ -958,7 +958,7 @@ color:black
      <property name="geometry">
       <rect>
        <x>140</x>
-       <y>148</y>
+       <y>162</y>
        <width>61</width>
        <height>23</height>
       </rect>
@@ -1739,7 +1739,7 @@ color:black
 </string>
     </property>
     <property name="currentIndex">
-     <number>1</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
@@ -3402,7 +3402,7 @@ border-image:url(:/images/gate2.png)
      <string>保存路径</string>
     </property>
    </widget>
-   <widget class="QPushButton" name="pB_DataAnalize">
+   <widget class="QPushButton" name="pB_DataAnalyze">
     <property name="geometry">
      <rect>
       <x>20</x>
