@@ -556,9 +556,9 @@ class SOCExpPlatform001(QWidget):
     # 功能： 开始加热*
     # -------------------------------------------------------------
     def stoveHeat(self):
-        # if not self.plc_flag:
-        #     self.ui.alarmBox.append('<font color="red">未连接plc,操作失败</font>')
-        #     return
+        if not self.plc_flag:
+            self.ui.alarmBox.append('<font color="red">未连接plc,操作失败</font>')
+            return
         self.StoveHeatIndex = self.ui.tV_Stove.rowCount()
         self.StoveHeatBuff = self.ui.sB_StoveStart.value() - 1
         self.StoveTempStart = 0
