@@ -336,6 +336,12 @@
       <height>22</height>
      </rect>
     </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>120.000000000000000</double>
+    </property>
    </widget>
    <widget class="QDoubleSpinBox" name="dBB_SetChCURRHigh">
     <property name="geometry">
@@ -345,6 +351,15 @@
       <width>62</width>
       <height>22</height>
      </rect>
+    </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>120.000000000000000</double>
+    </property>
+    <property name="value">
+     <double>120.000000000000000</double>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="dBB_SetChVLOTLow">
@@ -356,6 +371,12 @@
       <height>22</height>
      </rect>
     </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>120.000000000000000</double>
+    </property>
    </widget>
    <widget class="QDoubleSpinBox" name="dBB_SetChVLOTHigh">
     <property name="geometry">
@@ -365,6 +386,15 @@
       <width>62</width>
       <height>22</height>
      </rect>
+    </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>120.000000000000000</double>
+    </property>
+    <property name="value">
+     <double>120.000000000000000</double>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="dBB_SetChPOWLow">
@@ -376,6 +406,12 @@
       <height>22</height>
      </rect>
     </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>600.000000000000000</double>
+    </property>
    </widget>
    <widget class="QDoubleSpinBox" name="dBB_SetChPOWHigh">
     <property name="geometry">
@@ -385,6 +421,15 @@
       <width>62</width>
       <height>22</height>
      </rect>
+    </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>600.000000000000000</double>
+    </property>
+    <property name="value">
+     <double>600.000000000000000</double>
     </property>
    </widget>
   </widget>
@@ -474,6 +519,12 @@
       <height>22</height>
      </rect>
     </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>120.000000000000000</double>
+    </property>
    </widget>
    <widget class="QDoubleSpinBox" name="dBB_SetDisCURRHigh">
     <property name="geometry">
@@ -483,6 +534,15 @@
       <width>62</width>
       <height>22</height>
      </rect>
+    </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>120.000000000000000</double>
+    </property>
+    <property name="value">
+     <double>120.000000000000000</double>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="dBB_SetDisVLOTLow">
@@ -494,6 +554,12 @@
       <height>22</height>
      </rect>
     </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>120.000000000000000</double>
+    </property>
    </widget>
    <widget class="QDoubleSpinBox" name="dBB_SetDisVLOTHigh">
     <property name="geometry">
@@ -503,6 +569,15 @@
       <width>62</width>
       <height>22</height>
      </rect>
+    </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>120.000000000000000</double>
+    </property>
+    <property name="value">
+     <double>120.000000000000000</double>
     </property>
    </widget>
    <widget class="QDoubleSpinBox" name="dBB_SetDisPOWLow">
@@ -514,6 +589,15 @@
       <height>22</height>
      </rect>
     </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>600.000000000000000</double>
+    </property>
+    <property name="value">
+     <double>0.000000000000000</double>
+    </property>
    </widget>
    <widget class="QDoubleSpinBox" name="dBB_SetDisPOWHigh">
     <property name="geometry">
@@ -523,6 +607,15 @@
       <width>62</width>
       <height>22</height>
      </rect>
+    </property>
+    <property name="decimals">
+     <number>1</number>
+    </property>
+    <property name="maximum">
+     <double>600.000000000000000</double>
+    </property>
+    <property name="value">
+     <double>600.000000000000000</double>
     </property>
    </widget>
   </widget>
@@ -575,5 +668,22 @@
   </widget>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>Pb_CancelMFC</sender>
+   <signal>clicked()</signal>
+   <receiver>MFC_Info</receiver>
+   <slot>close()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>445</x>
+     <y>281</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>340</x>
+     <y>153</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

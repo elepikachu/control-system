@@ -19,9 +19,9 @@ import numpy as np
 import pyvisa as visa
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtChart import *
-from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QDateTime, QTimer, QThread, QItemSelectionModel
+from PyQt5.QtCore import pyqtSignal, pyqtSlot, Qt, QTimer, QThread, QItemSelectionModel
 from PyQt5.QtGui import QPainter, QIcon, QStandardItem, QStandardItemModel
-from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QDialogButtonBox, QDialog, QTableWidgetItem
+from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QDialog, QTableWidgetItem
 from matplotlib.widgets import CheckButtons
 
 import BatteryInfo
@@ -68,7 +68,7 @@ class SOCExpPlatform001(QWidget):
         self.itemModel_tV = QStandardItemModel(0, 2, self)
         self.selectionModel_tV = QItemSelectionModel(self.itemModel_tV)
         self.ui.tV_log.setModel(self.itemModel_tV)
-        self.itemModel_tV.setHorizontalHeaderLabels(['时间','描述'])
+        self.itemModel_tV.setHorizontalHeaderLabels(['时间', '描述'])
         self._SOCExpPlatform001__initBarChart()
         self.initPLCConnect()
         self.plcGetValue()
@@ -81,14 +81,13 @@ class SOCExpPlatform001(QWidget):
     # 功能： 读取json的配置信息
     # -------------------------------------------------------------
     def readConfig(self):
-        #self.initTable()
+        # self.initTable()
         with open('config.json', encoding="utf-8") as load_f:
             try:
                 js = json.load(load_f)
             except Exception as e:
                 print(e)
                 self.configResetAuto()
-                self.ui.alarmBox.append('<font color="red">配置信息读取失败，重置配置信息</font>')
                 js = json.load(load_f)
             stoveConfig = js[0]["para"]
             stoveStart = js[0]["start"]
@@ -132,7 +131,7 @@ class SOCExpPlatform001(QWidget):
         combo_logic = QtWidgets.QComboBox()
         combo_logic.addItem('大于')
         combo_logic.addItem('小于')
-        for i in range(self.ui.tV_Discharge.rowCount()-1):
+        for i in range(self.ui.tV_Discharge.rowCount() - 1):
             self.ui.tV_Discharge.setCellWidget(i, 0, combo_join)
             self.ui.tV_Discharge.setCellWidget(i, 1, combo_process)
             self.ui.tV_Discharge.setCellWidget(i, 2, combo_mode)
@@ -217,6 +216,10 @@ class SOCExpPlatform001(QWidget):
     # 功能：获取plc信息并显示
     # -------------------------------------------------------------
     def plcGetValue(self):
+        if self.plc_flag == 0:
+            print("plc no val")
+            self.MFCData = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+            return
         self.H2Input = snap7.util.get_real(self.data, 0)
         self.ui.l_H2Dis.setText('%.2f' % self.H2Input)
         self.CH4Input = snap7.util.get_real(self.data, 4)
@@ -259,12 +262,14 @@ class SOCExpPlatform001(QWidget):
         self.dBB_SetMFCN2Low = N2LimitL
         N2LimitH = snap7.util.get_real(self.data, 122)
         self.dBB_SetMFCN2High = N2LimitH
+        self.MFCData = (H2LimitL, H2LimitH, CO2LimitL, CO2LimitH, CH4LimitL, CH4LimitH, COLimitL, COLimitH, AirLimitL, AirLimitH, N2LimitL, N2LimitH)
+        self.MFCDict = self.MFCInitVal()
         Stove = snap7.util.get_real(self.data, 208)
         self.ui.l_TEMStove.setText('加热炉温度(℃): %.2f' % Stove)
-        Wwet = snap7.util.get_real(self.data, 200)
-        self.ui.l_WWet.setText('加湿器温度(℃): %.2f' % Wwet)
-        ETrop = snap7.util.get_real(self.data, 204)
-        self.ui.l_ETrop.setText('伴热带温度(℃): %.2f' % ETrop)
+        T_Wet = snap7.util.get_real(self.data, 200)
+        self.ui.l_WWet.setText('加湿器温度(℃): %.2f' % T_Wet)
+        T_Etrop = snap7.util.get_real(self.data, 204)
+        self.ui.l_ETrop.setText('伴热带温度(℃): %.2f' % T_Etrop)
         ValveH2 = self.data[181]
         if ValveH2 == 1:
             self.ui.pB_ManualH2.setChecked(True)
@@ -307,8 +312,8 @@ class SOCExpPlatform001(QWidget):
         else:
             self.ui.pB_ManualCO.setChecked(False)
             self.tubework(self.ui.pgB_CO_2, 0, 0)
-        Slient = self.data[194]
-        if Slient == 1:
+        Silent = self.data[194]
+        if Silent == 1:
             self.ui.act_Silent.setChecked(True)
         else:
             self.ui.act_Silent.setChecked(False)
@@ -321,6 +326,37 @@ class SOCExpPlatform001(QWidget):
             self.ui.rB_dis.setChecked(True)
             self.ui.pB_DisCharger.setEnabled(True)
             self.ui.pB_Charger.setEnabled(False)
+
+    # -------------------------------------------------------------
+    # 函数名： MFCInitVal
+    # 功能： 设置MFC初始值
+    # -------------------------------------------------------------
+    def MFCInitVal(self):
+        H2L = self.MFCData[0]
+        H2H = self.MFCData[1]
+        CHL = self.MFCData[2]
+        CHH = self.MFCData[3]
+        COL = self.MFCData[4]
+        COH = self.MFCData[5]
+        C2L = self.MFCData[6]
+        C2H = self.MFCData[7]
+        N2L = self.MFCData[8]
+        N2H = self.MFCData[9]
+        A2L = self.MFCData[10]
+        A2H = self.MFCData[11]
+        CCL = 0
+        CCH = 120
+        CVL = 0
+        CVH = 120
+        CPL = 0
+        CPH = 600
+        DCL = 0
+        DCH = 120
+        DVL = 0
+        DVH = 120
+        DPL = 0
+        DPH = 600
+        return locals()
 
     # -------------------------------------------------------------
     # 函数名： tubework
@@ -350,7 +386,7 @@ class SOCExpPlatform001(QWidget):
         opt.initFrom(self)
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        self.style().drawPrimitive(QtWidgets.QStyle.PE_Widget, opt, painter, self)
+        self.style().drawPrimitive(QtWidgets.QStyle.PrimitiveElement.PE_Widget, opt, painter, self)
 
     # -------------------------------------------------------------
     # 函数名： alarmClear
@@ -498,7 +534,7 @@ class SOCExpPlatform001(QWidget):
         snap7.util.set_byte(self.data, 188, 0)
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
         self.ui.alarmBox.append('回原位停止')
-        self.ui.bB_CylinderHome.button(QDialogButtonBox.Ok).setEnabled(True)
+        self.ui.bB_CylinderHome_S.button.setEnabled(True)
         self.ui.pB_CylinderPress.setEnabled(True)
 
     # -------------------------------------------------------------
@@ -584,7 +620,7 @@ class SOCExpPlatform001(QWidget):
                 if self.ui.tV_Stove.item(i, 0) is None or self.ui.tV_Stove.item(i, 0).text == '':
                     break
                 if i >= len(js[0]["para"]):
-                    js[0]["para"].append({"id": i+1})
+                    js[0]["para"].append({"id": i + 1})
                 item_temp = self.ui.tV_Stove.item(i, 0).text()
                 item_time = self.ui.tV_Stove.item(i, 1).text()
                 js[0]["para"][i]["temp"] = item_temp
@@ -888,7 +924,7 @@ class SOCExpPlatform001(QWidget):
             self.res.write('INP ON')
         if self.ui.pB_Charger.text() == '断开直流电源':
             self.res.write('OUTP ON')
-        self.ui.tV_Dischagre.setEnabled(False)
+        self.ui.tV_Discharge.setEnabled(False)
         self.ExDischarge.start(100)
 
     # -------------------------------------------------------------
@@ -897,13 +933,13 @@ class SOCExpPlatform001(QWidget):
     # -------------------------------------------------------------
     def doDisCharge(self):
         itemList = []
-        item = self.itemModel_Dis.item(self.itemIndexBuff, 0)
+        item = self.ui.tV_Discharge.item(self.itemIndexBuff, 0)
         data_Curr = float(self.dataList[0])
         data_Volt = float(self.dataList[1])
         data_Pow = float(self.dataList[2])
         self.ExDischargeTime = self.ExDischargeTime + 1
         self.LC_Time = self.LC_Time + 1
-        self.ui.tV_Dischagre.selectRow(self.itemIndexBuff)
+        self.ui.tV_Discharge.selectRow(self.itemIndexBuff)
         if item.checkState() == Qt.Checked:
             itemList.append('参与')
         else:
@@ -912,7 +948,7 @@ class SOCExpPlatform001(QWidget):
             item = self.itemModel_Dis.item(self.itemIndexBuff, i + 1)
             itemList.append(item.text())
 
-        data_Ref = float(itemList[11])
+        data_Ref = float(itemList[8])
         if self.itemIndexBuff <= self.itemIndex:
             if itemList[0] == '不参与':
                 print('不参与')
@@ -922,23 +958,23 @@ class SOCExpPlatform001(QWidget):
                     self.res.write('FUNC CURR')
                 data = float(itemList[3])
                 self.res.write('CURR %f' % data)
-                if itemList[9] == '电堆电流':
-                    if itemList[10] == '大于' or data_Curr >= data_Ref:
+                if itemList[6] == '电堆电流':
+                    if itemList[7] == '大于' or data_Curr >= data_Ref:
                         print('电堆电流大于')
                         self.itemIndexBuff = self.itemIndexBuff + 1
                     elif data_Curr <= data_Ref:
                         print('电堆电流小于')
                         self.itemIndexBuff = self.itemIndexBuff + 1
 
-                if itemList[9] == '电堆电压':
-                    if itemList[10] == '大于' or data_Volt >= data_Ref:
+                if itemList[6] == '电堆电压':
+                    if itemList[7] == '大于' or data_Volt >= data_Ref:
                         print('电堆电压大于')
                         self.itemIndexBuff = self.itemIndexBuff + 1
                     elif data_Volt <= data_Ref:
                         print('电堆电压小于')
                         self.itemIndexBuff = self.itemIndexBuff + 1
-                    elif itemList[9] == '电堆功率':
-                        if itemList[10] == '大于' or data_Pow >= data_Ref:
+                    elif itemList[6] == '电堆功率':
+                        if itemList[7] == '大于' or data_Pow >= data_Ref:
                             print('电堆功率大于')
                             self.itemIndexBuff = self.itemIndexBuff + 1
                         elif data_Pow <= data_Ref:
@@ -946,7 +982,7 @@ class SOCExpPlatform001(QWidget):
                             self.itemIndexBuff = self.itemIndexBuff + 1
                         else:
                             data_Time = data_Ref * 10
-                            if itemList[10] == '大于' or float(self.ExDischargeTime) >= data_Time:
+                            if itemList[7] == '大于' or float(self.ExDischargeTime) >= data_Time:
                                 print('执行时间大于')
                                 self.ExDischargeTime = 0
                                 self.itemIndexBuff = self.itemIndexBuff + 1
@@ -959,23 +995,23 @@ class SOCExpPlatform001(QWidget):
                                     self.res.write('FUNC VOLT')
                                 data = float(itemList[3])
                                 self.res.write('VOLT %f' % data)
-                                if itemList[9] == '电堆电流':
-                                    if itemList[10] == '大于' or data_Curr >= data_Ref:
+                                if itemList[6] == '电堆电流':
+                                    if itemList[7] == '大于' or data_Curr >= data_Ref:
                                         print('电堆电流大于')
                                         self.itemIndexBuff = self.itemIndexBuff + 1
                                     elif data_Curr <= data_Ref:
                                         print('电堆电流小于')
                                         self.itemIndexBuff = self.itemIndexBuff + 1
 
-                                if itemList[9] == '电堆电压':
-                                    if itemList[10] == '大于' or data_Volt >= data_Ref:
+                                if itemList[6] == '电堆电压':
+                                    if itemList[7] == '大于' or data_Volt >= data_Ref:
                                         print('电堆电压大于')
                                         self.itemIndexBuff = self.itemIndexBuff + 1
                                     elif data_Volt <= data_Ref:
                                         print('电堆电压小于')
                                         self.itemIndexBuff = self.itemIndexBuff + 1
-                                    elif itemList[9] == '电堆功率':
-                                        if itemList[10] == '大于' or data_Pow >= data_Ref:
+                                    elif itemList[6] == '电堆功率':
+                                        if itemList[7] == '大于' or data_Pow >= data_Ref:
                                             print('电堆功率大于')
                                             self.itemIndexBuff = self.itemIndexBuff + 1
                                         elif data_Pow <= data_Ref:
@@ -983,7 +1019,7 @@ class SOCExpPlatform001(QWidget):
                                             self.itemIndexBuff = self.itemIndexBuff + 1
                                         else:
                                             data_Time = data_Ref * 10
-                                            if itemList[10] == '大于' or float(self.ExDischargeTime) >= data_Time:
+                                            if itemList[7] == '大于' or float(self.ExDischargeTime) >= data_Time:
                                                 print('执行时间大于')
                                                 self.ExDischargeTime = 0
                                                 self.itemIndexBuff = self.itemIndexBuff + 1
@@ -996,23 +1032,23 @@ class SOCExpPlatform001(QWidget):
                                                     self.res.write('FUNC POW')
                                                 data = float(itemList[3])
                                                 self.res.write('POW %f' % data)
-                                                if itemList[9] == '电堆电流':
-                                                    if itemList[10] == '大于' or data_Curr >= data_Ref:
+                                                if itemList[6] == '电堆电流':
+                                                    if itemList[7] == '大于' or data_Curr >= data_Ref:
                                                         print('电堆电流大于')
                                                         self.itemIndexBuff = self.itemIndexBuff + 1
                                                     elif data_Curr <= data_Ref:
                                                         print('电堆电流小于')
                                                         self.itemIndexBuff = self.itemIndexBuff + 1
 
-                                                if itemList[9] == '电堆电压':
-                                                    if itemList[10] == '大于' or data_Volt >= data_Ref:
+                                                if itemList[6] == '电堆电压':
+                                                    if itemList[7] == '大于' or data_Volt >= data_Ref:
                                                         print('电堆电压大于')
                                                         self.itemIndexBuff = self.itemIndexBuff + 1
                                                     elif data_Volt <= data_Ref:
                                                         print('电堆电压小于')
                                                         self.itemIndexBuff = self.itemIndexBuff + 1
-                                                    elif itemList[9] == '电堆功率':
-                                                        if itemList[10] == '大于' or data_Pow >= data_Ref:
+                                                    elif itemList[6] == '电堆功率':
+                                                        if itemList[7] == '大于' or data_Pow >= data_Ref:
                                                             print('电堆功率大于')
                                                             self.itemIndexBuff = self.itemIndexBuff + 1
                                                         elif data_Pow <= data_Ref:
@@ -1020,7 +1056,7 @@ class SOCExpPlatform001(QWidget):
                                                             self.itemIndexBuff = self.itemIndexBuff + 1
                                                         else:
                                                             data_Time = data_Ref * 10
-                                                            if itemList[10] == '大于' or float(
+                                                            if itemList[7] == '大于' or float(
                                                                     self.ExDischargeTime) >= data_Time:
                                                                 print('执行时间大于')
                                                                 self.ExDischargeTime = 0
@@ -1032,15 +1068,14 @@ class SOCExpPlatform001(QWidget):
                                                             elif itemList[2] == 'LCC':
                                                                 if itemList[1] == '放电':
                                                                     self.res.write('FUNC CURR')
-                                                                if self.LC_Time >= float(itemList[7]) * 10:
+                                                                if self.LC_Time >= float(itemList[5]) * 10:
                                                                     self.LC_Data = self.LC_Data + float(itemList[5])
                                                                     self.LC_Time = 0
                                                                 data = float(itemList[3])
                                                                 data = data + self.LC_Data
                                                                 self.res.write('CURR %f' % data)
-                                                                if itemList[9] == '电堆电流':
-                                                                    if itemList[
-                                                                        10] == '大于' or data_Curr >= data_Ref:
+                                                                if itemList[6] == '电堆电流':
+                                                                    if itemList[7] == '大于' or data_Curr >= data_Ref:
                                                                         print('电堆电流大于')
                                                                         self.LC_Time = 0
                                                                         self.LC_Data = 0
@@ -1049,9 +1084,8 @@ class SOCExpPlatform001(QWidget):
                                                                         print('电堆电流小于')
                                                                         self.itemIndexBuff = self.itemIndexBuff + 1
 
-                                                                if itemList[9] == '电堆电压':
-                                                                    if itemList[
-                                                                        10] == '大于' or data_Volt >= data_Ref:
+                                                                if itemList[6] == '电堆电压':
+                                                                    if itemList[7] == '大于' or data_Volt >= data_Ref:
                                                                         print('电堆电压大于')
                                                                         self.LC_Time = 0
                                                                         self.LC_Data = 0
@@ -1061,9 +1095,8 @@ class SOCExpPlatform001(QWidget):
                                                                         self.LC_Time = 0
                                                                         self.LC_Data = 0
                                                                         self.itemIndexBuff = self.itemIndexBuff + 1
-                                                                    elif itemList[9] == '电堆功率':
-                                                                        if itemList[
-                                                                            10] == '大于' or data_Pow >= data_Ref:
+                                                                    elif itemList[6] == '电堆功率':
+                                                                        if itemList[7] == '大于' or data_Pow >= data_Ref:
                                                                             print('电堆功率大于')
                                                                             self.LC_Time = 0
                                                                             self.LC_Data = 0
@@ -1075,34 +1108,29 @@ class SOCExpPlatform001(QWidget):
                                                                             self.itemIndexBuff = self.itemIndexBuff + 1
                                                                         else:
                                                                             data_Time = data_Ref * 10
-                                                                            if itemList[10] == '大于' or float(
-                                                                                    self.ExDischargeTime) >= data_Time:
+                                                                            if itemList[7] == '大于' or float(self.ExDischargeTime) >= data_Time:
                                                                                 print('执行时间大于')
                                                                                 self.LC_Time = 0
                                                                                 self.LC_Data = 0
                                                                                 self.ExDischargeTime = 0
                                                                                 self.itemIndexBuff = self.itemIndexBuff + 1
-                                                                            elif float(
-                                                                                    self.ExDischargeTime) <= data_Time:
+                                                                            elif float(self.ExDischargeTime) <= data_Time:
                                                                                 print('执行时间小于')
                                                                                 self.LC_Time = 0
                                                                                 self.LC_Data = 0
                                                                                 self.ExDischargeTime = 0
                                                                                 self.itemIndexBuff = self.itemIndexBuff + 1
-                                                                            elif itemList[2] == 'LCV':
+                                                                            elif itemList[2] == 'LCV(V)':
                                                                                 if itemList[1] == '放电':
                                                                                     self.res.write('FUNC VOLT')
-                                                                                if self.LC_Time >= float(
-                                                                                        itemList[7]) * 10:
-                                                                                    self.LC_Data = self.LC_Data + float(
-                                                                                        itemList[5])
+                                                                                if self.LC_Time >= float(itemList[5]) * 10:
+                                                                                    self.LC_Data = self.LC_Data + float(itemList[4])
                                                                                     self.LC_Time = 0
                                                                                 data = float(itemList[3])
                                                                                 data = data + self.LC_Data
                                                                                 self.res.write('VOLT %f' % data)
-                                                                                if itemList[9] == '电堆电流':
-                                                                                    if itemList[
-                                                                                        10] == '大于' or data_Curr >= data_Ref:
+                                                                                if itemList[6] == '电堆电流':
+                                                                                    if itemList[7] == '大于' or data_Curr >= data_Ref:
                                                                                         print('电堆电流大于')
                                                                                         self.LC_Time = 0
                                                                                         self.LC_Data = 0
@@ -1113,9 +1141,8 @@ class SOCExpPlatform001(QWidget):
                                                                                         self.LC_Data = 0
                                                                                         self.itemIndexBuff = self.itemIndexBuff + 1
 
-                                                                                if itemList[9] == '电堆电压':
-                                                                                    if itemList[
-                                                                                        10] == '大于' or data_Volt >= data_Ref:
+                                                                                if itemList[6] == '电堆电压':
+                                                                                    if itemList[7] == '大于' or data_Volt >= data_Ref:
                                                                                         print('电堆电压大于')
                                                                                         self.LC_Time = 0
                                                                                         self.LC_Data = 0
@@ -1125,9 +1152,8 @@ class SOCExpPlatform001(QWidget):
                                                                                         self.LC_Time = 0
                                                                                         self.LC_Data = 0
                                                                                         self.itemIndexBuff = self.itemIndexBuff + 1
-                                                                                    elif itemList[9] == '电堆功率':
-                                                                                        if itemList[
-                                                                                            10] == '大于' or data_Pow >= data_Ref:
+                                                                                    elif itemList[6] == '电堆功率':
+                                                                                        if itemList[7] == '大于' or data_Pow >= data_Ref:
                                                                                             print('电堆功率大于')
                                                                                             self.LC_Time = 0
                                                                                             self.LC_Data = 0
@@ -1139,33 +1165,28 @@ class SOCExpPlatform001(QWidget):
                                                                                             self.itemIndexBuff = self.itemIndexBuff + 1
                                                                                         else:
                                                                                             data_Time = data_Ref * 10
-                                                                                            if itemList[
-                                                                                                10] == '大于' or float(
-                                                                                                self.ExDischargeTime) >= data_Time:
+                                                                                            if itemList[7] == '大于' or float(self.ExDischargeTime) >= data_Time:
                                                                                                 print('执行时间大于')
                                                                                                 self.LC_Time = 0
                                                                                                 self.LC_Data = 0
                                                                                                 self.ExDischargeTime = 0
                                                                                                 self.itemIndexBuff = self.itemIndexBuff + 1
-                                                                                            elif float(
-                                                                                                    self.ExDischargeTime) <= data_Time:
+                                                                                            elif float(self.ExDischargeTime) <= data_Time:
                                                                                                 print('执行时间小于')
                                                                                                 self.LC_Time = 0
                                                                                                 self.LC_Data = 0
                                                                                                 self.ExDischargeTime = 0
                                                                                                 self.itemIndexBuff = self.itemIndexBuff + 1
-                                                                                            elif itemList[
-                                                                                                1] == '放电':
-                                                                                                self.res.write(
-                                                                                                    'FUNC POW')
+                                                                                            elif itemList[1] == '放电':
+                                                                                                self.res.write('FUNC POW')
             if self.LC_Time >= float(itemList[7]) * 10:
                 self.LC_Data = self.LC_Data + float(itemList[5])
                 self.LC_Time = 0
             data = float(itemList[3])
             data = data + self.LC_Data
             self.res.write('POW %f' % data)
-            if itemList[9] == '电堆电流':
-                if itemList[10] == '大于' or data_Curr >= data_Ref:
+            if itemList[6] == '电堆电流':
+                if itemList[7] == '大于' or data_Curr >= data_Ref:
                     print('电堆电流大于')
                     self.LC_Time = 0
                     self.LC_Data = 0
@@ -1175,8 +1196,8 @@ class SOCExpPlatform001(QWidget):
                     self.LC_Time = 0
                     self.LC_Data = 0
                     self.itemIndexBuff = self.itemIndexBuff + 1
-                elif itemList[9] == '电堆电压':
-                    if itemList[10] == '大于' or data_Volt >= data_Ref:
+                elif itemList[6] == '电堆电压':
+                    if itemList[7] == '大于' or data_Volt >= data_Ref:
                         print('电堆电压大于')
                         self.LC_Time = 0
                         self.LC_Data = 0
@@ -1186,8 +1207,8 @@ class SOCExpPlatform001(QWidget):
                         self.LC_Time = 0
                         self.LC_Data = 0
                         self.itemIndexBuff = self.itemIndexBuff + 1
-                    elif itemList[9] == '电堆功率':
-                        if itemList[10] == '大于' or data_Pow >= data_Ref:
+                    elif itemList[6] == '电堆功率':
+                        if itemList[7] == '大于' or data_Pow >= data_Ref:
                             print('电堆功率大于')
                             self.LC_Time = 0
                             self.LC_Data = 0
@@ -1199,7 +1220,7 @@ class SOCExpPlatform001(QWidget):
                             self.itemIndexBuff = self.itemIndexBuff + 1
                         else:
                             data_Time = data_Ref * 10
-                            if itemList[10] == '大于' or float(self.ExDischargeTime) >= data_Time:
+                            if itemList[7] == '大于' or float(self.ExDischargeTime) >= data_Time:
                                 print('执行时间大于')
                                 self.LC_Time = 0
                                 self.LC_Data = 0
@@ -1212,7 +1233,7 @@ class SOCExpPlatform001(QWidget):
                                 self.ExDischargeTime = 0
                                 self.itemIndexBuff = self.itemIndexBuff + 1
         if self.itemIndexBuff == self.itemIndex:
-            self.NotExDischarge()
+            self.notExDischarge()
 
     # -------------------------------------------------------------
     # 函数名： dischargeSave
@@ -1227,7 +1248,7 @@ class SOCExpPlatform001(QWidget):
                 if self.ui.tV_Discharge.item(i, 0) is None or self.ui.tV_Discharge.item(i, 0).text == '':
                     break
                 if i >= len(js[1]["para"]):
-                    js[1]["para"].append({"id": i+1})
+                    js[1]["para"].append({"id": i + 1})
                 for j in range(9):
                     js[1]["para"][i][keys[j + 1]] = self.ui.tV_Discharge.item(i, j).text()
             f.write(json.dumps(js, ensure_ascii=False))
@@ -1884,29 +1905,29 @@ class SOCExpPlatform001(QWidget):
         snap7.util.set_int(self.data, 68, N2Time)
         N2Flow = self.ui.dSB_N2FlowRate.value()
         snap7.util.set_real(self.data, 64, N2Flow)
-        H2LimitL = self.ui.dBB_SetMFCH2Low.value()
+        H2LimitL = self.MFCDict['H2L']
         snap7.util.set_real(self.data, 94, H2LimitL)
-        H2LimitH = self.ui.dBB_SetMFCH2High.value()
+        H2LimitH = self.MFCDict['H2L']
         snap7.util.set_real(self.data, 98, H2LimitH)
-        CO2LimitL = self.ui.dBB_SetMFCCO2Low.value()
+        CO2LimitL = self.MFCDict['C2L']
         snap7.util.set_real(self.data, 110, CO2LimitL)
-        CO2LimitH = self.ui.dBB_SetMFCCO2High.value()
+        CO2LimitH = self.MFCDict['C2H']
         snap7.util.set_real(self.data, 114, CO2LimitH)
-        CH4LimitL = self.ui.dBB_SetMFCCH4Low.value()
+        CH4LimitL = self.MFCDict['CHL']
         snap7.util.set_real(self.data, 102, CH4LimitL)
-        CH4LimitH = self.ui.dBB_SetMFCCH4High.value()
+        CH4LimitH = self.MFCDict['CHH']
         snap7.util.set_real(self.data, 106, CH4LimitH)
-        COLimitL = self.ui.dBB_SetMFCCOLow.value()
+        COLimitL = self.MFCDict['COL']
         snap7.util.set_real(self.data, 134, COLimitL)
-        COLimitH = self.ui.dBB_SetMFCCOHigh.value()
+        COLimitH = self.MFCDict['COH']
         snap7.util.set_real(self.data, 138, COLimitH)
-        AirLimitL = self.ui.dBB_SetMFCAirLow.value()
+        AirLimitL = self.MFCDict['A2H']
         snap7.util.set_real(self.data, 126, AirLimitL)
-        AirLimitH = self.ui.dBB_SetMFCAirHigh.value()
+        AirLimitH = self.MFCDict['A2L']
         snap7.util.set_real(self.data, 130, AirLimitH)
-        N2LimitL = self.ui.dBB_SetMFCN2Low.value()
+        N2LimitL = self.MFCDict['N2H']
         snap7.util.set_real(self.data, 118, N2LimitL)
-        N2LimitH = self.ui.dBB_SetMFCN2High.value()
+        N2LimitH = self.MFCDict['N2L']
         snap7.util.set_real(self.data, 122, N2LimitH)
         SVLimitL = self.ui.dBB_SetSingleVoltLow.value()
         snap7.util.set_real(self.data, 162, SVLimitL)
@@ -2163,6 +2184,7 @@ class SOCExpPlatform001(QWidget):
         ORIGIN_CONFIG = '[{"name": "stove", "para": [{"id": 1, "temp": "701", "time": "10"}, {"id": 2, "temp": "702", "time": "20"}], "start": 0}, {"name": "discharge", "para": [{"id": 1, "参与状态": "参与", "过程选择": "充电", "工作模式": "LCC(A)", "开始数值": 1, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "小于", "触发数值": 1}, {"id": 2, "参与状态": "参与", "过程选择": "放电", "工作模式": "CC(A)", "开始数值": 0, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "大于", "触发数值": 0}]}]'
         with open('config.json', 'w', encoding='utf-8') as f:
             f.write(json.dumps(eval(ORIGIN_CONFIG), ensure_ascii=False))
+            self.ui.alarmBox.append('<font color="red">配置信息读取失败，重置配置信息</font>')
 
     # -------------------------------------------------------------
     # 函数名： configReset
@@ -2195,7 +2217,11 @@ class SOCExpPlatform001(QWidget):
     # -------------------------------------------------------------
     def mfcWindow(self):
         self.window3 = MFCWindow()
+        self.window3.initMFCWindow(self.MFCData)
         self.window3.show()
+        ret = self.window3.exec()
+        if ret == QDialog.Accepted:
+            self.MFCDict = self.window3.setMFCInfo()
 
     # -------------------------------------------------------------
     # 函数名： batteryWindow
@@ -2236,14 +2262,55 @@ class HelpWindow(QWidget):
 # 类名： MFCWindow
 # 功能：MFC设置窗口
 # -------------------------------------------------------------
-class MFCWindow(QWidget):
+class MFCWindow(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.ui = MFCSetting.Ui_MFC_Info()
         self.ui.setupUi(self)
+        self.ui.Pb_OKMFC.clicked.connect(self.setMFCInfo)
 
     def initMFCWindow(self, data):
+        self.ui.dBB_SetMFCH2Low = data[0]
+        self.ui.dBB_SetMFCH2High = data[1]
+        self.ui.dBB_SetMFCCO2Low = data[2]
+        self.ui.dBB_SetMFCCO2LHigh = data[3]
+        self.ui.dBB_SetMFCCH4Low = data[4]
+        self.ui.dBB_SetMFCCH4LHigh = data[5]
+        self.ui.dBB_SetMFCCOLow = data[6]
+        self.ui.dBB_SetMFCCOLHigh = data[7]
+        self.ui.dBB_SetMFCAirLow = data[8]
+        self.ui.dBB_SetMFCAirLHigh = data[9]
+        self.ui.dBB_SetMFCN2Low = data[10]
+        self.ui.dBB_SetMFCN2LHigh = data[11]
         pass
+
+    def setMFCInfo(self):
+        H2L = self.ui.dBB_SetMFCH2Low.value()
+        H2H = self.ui.dBB_SetMFCH2High.value()
+        CHL = self.ui.dBB_SetMFCCH4Low.value()
+        CHH = self.ui.dBB_SetMFCCH4High.value()
+        COL = self.ui.dBB_SetMFCCOLow.value()
+        COH = self.ui.dBB_SetMFCCOHigh.value()
+        C2L = self.ui.dBB_SetMFCCO2Low.value()
+        C2H = self.ui.dBB_SetMFCCO2High.value()
+        N2L = self.ui.dBB_SetMFCN2Low.value()
+        N2H = self.ui.dBB_SetMFCN2High.value()
+        A2L = self.ui.dBB_SetMFCAirLow.value()
+        A2H = self.ui.dBB_SetMFCAirHigh.value()
+        CCL = self.ui.dBB_SetChCURRLow.value()
+        CCH = self.ui.dBB_SetChCURRHigh.value()
+        CVL = self.ui.dBB_SetChVLOTLow.value()
+        CVH = self.ui.dBB_SetChCURRHigh.value()
+        CPL = self.ui.dBB_SetChPOWLow.value()
+        CPH = self.ui.dBB_SetChPOWHigh.value()
+        DCL = self.ui.dBB_SetDisCURRLow.value()
+        DCH = self.ui.dBB_SetDisCURRHigh.value()
+        DVL = self.ui.dBB_SetDisVLOTLow.value()
+        DVH = self.ui.dBB_SetDisVLOTHigh.value()
+        DPL = self.ui.dBB_SetDisPOWLow.value()
+        DPH = self.ui.dBB_SetDisPOWHigh.value()
+        self.accept()
+        return locals()
 
 
 # -------------------------------------------------------------
