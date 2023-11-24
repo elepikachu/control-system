@@ -441,8 +441,8 @@ color:black
      <widget class="QRadioButton" name="rB_manu">
       <property name="geometry">
        <rect>
-        <x>250</x>
-        <y>9</y>
+        <x>340</x>
+        <y>10</y>
         <width>89</width>
         <height>31</height>
        </rect>
@@ -472,10 +472,13 @@ color:black
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>59</y>
+       <y>69</y>
        <width>581</width>
-       <height>91</height>
+       <height>211</height>
       </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true"/>
      </property>
      <property name="title">
       <string>手动模式设置</string>
@@ -483,8 +486,8 @@ color:black
      <widget class="QPushButton" name="bB_Manual_S">
       <property name="geometry">
        <rect>
-        <x>340</x>
-        <y>50</y>
+        <x>180</x>
+        <y>170</y>
         <width>81</width>
         <height>23</height>
        </rect>
@@ -499,8 +502,8 @@ color:black
      <widget class="QPushButton" name="bB_Manual_E">
       <property name="geometry">
        <rect>
-        <x>460</x>
-        <y>50</y>
+        <x>340</x>
+        <y>170</y>
         <width>81</width>
         <height>23</height>
        </rect>
@@ -515,8 +518,8 @@ color:black
      <widget class="QDoubleSpinBox" name="dSB_ManualData">
       <property name="geometry">
        <rect>
-        <x>370</x>
-        <y>20</y>
+        <x>170</x>
+        <y>140</y>
         <width>91</width>
         <height>21</height>
        </rect>
@@ -531,8 +534,8 @@ color:black
      <widget class="QLabel" name="l_WorkMode">
       <property name="geometry">
        <rect>
-        <x>320</x>
-        <y>20</y>
+        <x>100</x>
+        <y>140</y>
         <width>54</width>
         <height>21</height>
        </rect>
@@ -544,10 +547,10 @@ color:black
      <widget class="QGroupBox" name="gB_workStatus">
       <property name="geometry">
        <rect>
-        <x>150</x>
-        <y>20</y>
-        <width>161</width>
-        <height>61</height>
+        <x>290</x>
+        <y>30</y>
+        <width>271</width>
+        <height>71</height>
        </rect>
       </property>
       <property name="title">
@@ -556,9 +559,9 @@ color:black
       <widget class="QRadioButton" name="rB_CC">
        <property name="geometry">
         <rect>
-         <x>10</x>
-         <y>20</y>
-         <width>89</width>
+         <x>90</x>
+         <y>30</y>
+         <width>71</width>
          <height>16</height>
         </rect>
        </property>
@@ -572,9 +575,9 @@ color:black
       <widget class="QRadioButton" name="rB_CV">
        <property name="geometry">
         <rect>
-         <x>80</x>
-         <y>20</y>
-         <width>89</width>
+         <x>170</x>
+         <y>30</y>
+         <width>71</width>
          <height>16</height>
         </rect>
        </property>
@@ -586,8 +589,8 @@ color:black
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>40</y>
-         <width>89</width>
+         <y>30</y>
+         <width>71</width>
          <height>16</height>
         </rect>
        </property>
@@ -600,9 +603,9 @@ color:black
       <property name="geometry">
        <rect>
         <x>20</x>
-        <y>20</y>
-        <width>111</width>
-        <height>61</height>
+        <y>30</y>
+        <width>241</width>
+        <height>71</height>
        </rect>
       </property>
       <property name="title">
@@ -611,8 +614,8 @@ color:black
       <widget class="QRadioButton" name="rB_dis">
        <property name="geometry">
         <rect>
-         <x>10</x>
-         <y>40</y>
+         <x>120</x>
+         <y>30</y>
          <width>89</width>
          <height>16</height>
         </rect>
@@ -625,7 +628,7 @@ color:black
        <property name="geometry">
         <rect>
          <x>10</x>
-         <y>20</y>
+         <y>30</y>
          <width>89</width>
          <height>16</height>
         </rect>
@@ -641,8 +644,8 @@ color:black
      <widget class="QLabel" name="l_WorkTime">
       <property name="geometry">
        <rect>
-        <x>480</x>
-        <y>20</y>
+        <x>350</x>
+        <y>140</y>
         <width>101</width>
         <height>21</height>
        </rect>
@@ -651,15 +654,31 @@ color:black
        <string>已运行时间： 0s</string>
       </property>
      </widget>
+     <widget class="QLabel" name="l_plcnotifiy">
+      <property name="geometry">
+       <rect>
+        <x>170</x>
+        <y>110</y>
+        <width>231</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;提示：未连接到plc，请连接到plc后设置&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+      </property>
+     </widget>
     </widget>
     <widget class="QGroupBox" name="gB_ADisCharge">
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>150</y>
+       <y>70</y>
        <width>581</width>
-       <height>125</height>
+       <height>211</height>
       </rect>
+     </property>
+     <property name="styleSheet">
+      <string notr="true"/>
      </property>
      <property name="title">
       <string>自动模式设置</string>
@@ -670,14 +689,14 @@ color:black
         <x>10</x>
         <y>16</y>
         <width>561</width>
-        <height>81</height>
+        <height>151</height>
        </rect>
       </property>
       <property name="styleSheet">
        <string notr="true">color:black</string>
       </property>
       <property name="rowCount">
-       <number>4</number>
+       <number>6</number>
       </property>
       <attribute name="horizontalHeaderDefaultSectionSize">
        <number>75</number>
@@ -685,6 +704,8 @@ color:black
       <attribute name="verticalHeaderDefaultSectionSize">
        <number>25</number>
       </attribute>
+      <row/>
+      <row/>
       <row/>
       <row/>
       <row/>
@@ -749,7 +770,7 @@ color:black
       <property name="geometry">
        <rect>
         <x>240</x>
-        <y>100</y>
+        <y>180</y>
         <width>91</width>
         <height>20</height>
        </rect>
@@ -771,7 +792,7 @@ color:black
       <property name="geometry">
        <rect>
         <x>360</x>
-        <y>100</y>
+        <y>180</y>
         <width>91</width>
         <height>20</height>
        </rect>
@@ -793,7 +814,7 @@ color:black
       <property name="geometry">
        <rect>
         <x>120</x>
-        <y>100</y>
+        <y>180</y>
         <width>91</width>
         <height>20</height>
        </rect>
@@ -812,6 +833,9 @@ color:black
       </property>
      </widget>
     </widget>
+    <zorder>gB_ADisCharge</zorder>
+    <zorder>gB_WorkWay</zorder>
+    <zorder>gB_MDisCharge</zorder>
    </widget>
    <widget class="QGroupBox" name="gB_Heating">
     <property name="geometry">
@@ -828,9 +852,9 @@ color:black
     <widget class="QTableWidget" name="tV_Stove">
      <property name="geometry">
       <rect>
-       <x>8</x>
+       <x>6</x>
        <y>20</y>
-       <width>194</width>
+       <width>199</width>
        <height>131</height>
       </rect>
      </property>
@@ -841,7 +865,7 @@ color:black
       <number>15</number>
      </property>
      <attribute name="horizontalHeaderDefaultSectionSize">
-      <number>77</number>
+      <number>79</number>
      </attribute>
      <attribute name="verticalHeaderDefaultSectionSize">
       <number>25</number>
@@ -887,12 +911,18 @@ color:black
      <row/>
      <column>
       <property name="text">
-       <string>加热温度(℃)</string>
+       <string>加热温度/℃</string>
+      </property>
+      <property name="textAlignment">
+       <set>AlignCenter</set>
       </property>
      </column>
      <column>
       <property name="text">
-       <string>时间(min)</string>
+       <string>时间/min</string>
+      </property>
+      <property name="textAlignment">
+       <set>AlignCenter</set>
       </property>
      </column>
     </widget>

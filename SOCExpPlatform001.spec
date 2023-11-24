@@ -8,7 +8,7 @@ a = Analysis(
     ['SOCExpPlatform001.py'],
     pathex=[],
     binaries=[],
-    datas=[],
+    datas=[('Help.txt','.'),('config.json','.'),('snap7.dll','.')],
     hiddenimports=['python-snap7'],
     hookspath=[],
     hooksconfig={},
