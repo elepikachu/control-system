@@ -357,6 +357,9 @@ color:black
      <property name="text">
       <string>连接电子负载</string>
      </property>
+     <property name="checkable">
+      <bool>true</bool>
+     </property>
     </widget>
     <widget class="QPushButton" name="pB_Charger">
      <property name="geometry">
@@ -372,6 +375,9 @@ color:black
      </property>
      <property name="text">
       <string>连接直流电源</string>
+     </property>
+     <property name="checkable">
+      <bool>true</bool>
      </property>
     </widget>
     <widget class="QLabel" name="l_ElcLoad">

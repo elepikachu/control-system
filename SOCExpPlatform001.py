@@ -23,6 +23,7 @@ from PyQt5.QtGui import QPainter, QIcon, QStandardItem, QStandardItemModel
 from PyQt5.QtWidgets import QFileDialog, QMessageBox, QWidget, QDialog, QTableWidgetItem
 from matplotlib.widgets import CheckButtons
 
+
 import BatteryInfo
 import MFCSetting
 import SOCExpPlatform
@@ -105,7 +106,6 @@ class SOCExpPlatform001(QWidget):
             for i in range(rowCnt2):
                 if str(disConfig[i]['参与状态']) == '参与':
                     self.ui.tV_Discharge.cellWidget(i, 0).setChecked(True)
-                    print(i)
                 for j in range(2, 10):
                     if j == 2 or j == 3 or j == 7 or j == 8:
                         self.ui.tV_Discharge.cellWidget(i, j-1).setCurrentText(str(disConfig[i][keys[j]]))
@@ -235,7 +235,6 @@ class SOCExpPlatform001(QWidget):
         if self.plc_flag == 0:
             print("plc no val")
             self.MFCData = (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
-            return
         self.H2Input = snap7.util.get_real(self.data, 0)
         self.ui.l_H2Dis.setText('%.2f' % self.H2Input)
         self.CH4Input = snap7.util.get_real(self.data, 4)
@@ -255,17 +254,17 @@ class SOCExpPlatform001(QWidget):
         self.GasPressure = snap7.util.get_real(self.data, 36)
         self.ui.l_GasPressure.setText('压力(N): %.2f' % self.GasPressure)
         self.H2Set = snap7.util.get_real(self.data, 70)
-        self.ui.dSB_SetH2.setValue(self.H2Set)
+        self.ui.dSB_SetH2.setText(str(self.H2Set))
         self.CH4Set = snap7.util.get_real(self.data, 74)
-        self.ui.dSB_SetCH4.setValue(self.CH4Set)
+        self.ui.dSB_SetCH4.setText(str(self.CH4Set))
         self.CO2Set = snap7.util.get_real(self.data, 78)
-        self.ui.dSB_SetCO2.setValue(self.CO2Set)
+        self.ui.dSB_SetCO2.setText(str(self.CO2Set))
         self.COSet = snap7.util.get_real(self.data, 90)
-        self.ui.dSB_SetCO.setValue(self.COSet)
+        self.ui.dSB_SetCO.setText(str(self.COSet))
         self.N2Set = snap7.util.get_real(self.data, 82)
-        self.ui.dSB_SetN2.setValue(self.N2Set)
+        self.ui.dSB_SetN2.setText(str(self.N2Set))
         self.AirSet = snap7.util.get_real(self.data, 86)
-        self.ui.dSB_SetAir.setValue(self.AirSet)
+        self.ui.dSB_SetAir.setText(str(self.AirSet))
         N2Time = snap7.util.get_int(self.data, 68)
         self.ui.sB_N2Time.setValue(N2Time)
         N2Flow = snap7.util.get_real(self.data, 64)
@@ -450,7 +449,7 @@ class SOCExpPlatform001(QWidget):
     # -------------------------------------------------------------
     @pyqtSlot()
     def on_pB_PLCConnection_released(self):
-        if self.ui.pB_PLCConnection.isChecked():
+        if not self.plc_flag:
             self.PLCConnect()
         else:
             self.PLCDisConnect()
@@ -1353,6 +1352,7 @@ class SOCExpPlatform001(QWidget):
     def on_pB_DisCharger_released(self):
         if self.ui.pB_DisCharger.isChecked():
             try:
+                print('release')
                 self.rm = visa.ResourceManager()
                 self.res = self.rm.open_resource('ASRL2::INSTR')
                 print(type(self.res))

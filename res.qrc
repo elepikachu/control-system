@@ -1,6 +1,7 @@
 <RCC>
   <qresource prefix="images">
-    <file>img/caution.png</file>
+    <file alias="caution.png">img/caution.png</file>
+    <file alias="background2.png">img/background2.png</file>
     <file alias="background.png">img/background.png</file>
     <file alias="battery.png">img/battery.png</file>
     <file alias="cnpc.png">img/cnpc.png</file>
