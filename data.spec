@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import sys ; sys.setrecursionlimit(sys.getrecursionlimit() * 5)
 
 block_cipher = None
 
@@ -8,12 +9,12 @@ a = Analysis(
     ['data.py'],
     pathex=[],
     binaries=[],
-    datas=['timesun.ttf','.'],
+    datas=[('timesun.ttf','.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['tensorflow','torch','sklearn','pydantic','pyarrow'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,

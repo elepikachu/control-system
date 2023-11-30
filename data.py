@@ -2,21 +2,23 @@
 # test the ui
 import os
 import sys
+import matplotlib
+
+import pandas as pd
+import numpy as np
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon, QPainter
 from matplotlib import pyplot as plt
 from matplotlib import font_manager
-import matplotlib
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from PyQt5.QtWidgets import QWidget, QMessageBox
+from matplotlib.figure import Figure
+from scipy import stats
+
+import DataAnalyse
 
 matplotlib.use('Qt5Agg')
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from PyQt5.QtWidgets import QWidget, QFileDialog, QMessageBox
-from matplotlib.figure import Figure
-from scipy.stats import stats
-import pandas as pd
-import numpy as np
-import DataAnalyse
 
 try:
     font_path = "timesun.ttf"
@@ -47,6 +49,7 @@ class DataWindow(QWidget):
         self.ui.pb_da.clicked.connect(self.data_analyse)
         self.ui.pb_plot.clicked.connect(self.make_plot)
         self.ui.pb_down.clicked.connect(self.down_chart)
+        self.ui.pb_downcsv.clicked.connect(self.down_csv)
 
     # -------------------------------------------------------------
     # 函数名： paintEvent
@@ -73,7 +76,7 @@ class DataWindow(QWidget):
         ax.plot(self.df['电流'], self.df['电压'], marker='.')
         ax.set_xlabel('电流/A')
         ax.set_xlabel('电压/V')
-        # ax.grid(visible=True)
+        ax.grid(visible=True)
         ax.set_title('当前数据流压图')
         dr.figure = fig
         graphic_scene = QtWidgets.QGraphicsScene()
@@ -103,11 +106,10 @@ class DataWindow(QWidget):
     # -------------------------------------------------------------
     def upload_chart(self):
         curPath = os.getcwd()
-        filename, flt = QFileDialog.getOpenFileName(self, '选择文件', curPath, '数据文件(*.csv *.xlsx);;所有文件(*.*)')
+        filename, flt = QtWidgets.QFileDialog.getOpenFileName(self, '选择文件', curPath, '数据文件(*.csv *.xlsx);;所有文件(*.*)')
         if filename == '':
             return
         file_extension = os.path.splitext(filename)[1]
-        print(file_extension)
         if file_extension == '.csv':
             self.file_fg = 1
             self.df = pd.read_csv(filename, header=1, encoding='utf-8')
@@ -122,6 +124,7 @@ class DataWindow(QWidget):
         if self.ui.sb_step != 1:
             self.df = self.df[::self.ui.sb_step.value()]
         self.df = self.df[self.df['电流'] > 0.05]
+        self.ui.l_stat.setText('<font color="blue">已上传：' + filename.split('/')[-1] + '</font>')
         self.figure_init()
         self.figure_init()
 
@@ -135,9 +138,16 @@ class DataWindow(QWidget):
             return
         if self.ui.cb_del.isChecked():
             self.df = self.df.drop([self.df.index[0]], axis=0)
-            self.df = self.df.drop([self.df.index[0]], axis=0)
+            self.df = self.df.drop([self.df.index[-1]], axis=0)
         if self.ui.cb_dup.isChecked():
-            self.df['电流2'] = self.df['电流'].round(1)
+            acc = self.ui.cb_acc.currentText()
+            print(acc)
+            if acc == '高':
+                self.df['电流2'] = self.df['电流'].round(1)
+            if acc == '中':
+                self.df['电流2'] = (self.df['电流'] * 4).round(1) / 4
+            if acc == '低':
+                self.df['电流2'] = self.df['电流'].round(2)
             self.df = self.df.sort_values(['电压'], ascending=False).drop_duplicates(subset=['电流2'],
                                                                                    keep='first').sort_index()
         if self.ui.cb_vari.isChecked():
@@ -149,7 +159,7 @@ class DataWindow(QWidget):
             std_res = res.std()
             self.df = self.df[res <= mean_res + k * std_res]
         self.figure_init()
-        print('rrr')
+        self.figure_init()
 
     # -------------------------------------------------------------
     # 函数名： down_chart
@@ -159,9 +169,23 @@ class DataWindow(QWidget):
         if self.file_fg == 0:
             QMessageBox.information(self, '失败', '公主请先上传表格')
             return
-        if self.df['电流2']:
+        if '电流2' in self.df.index:
             self.df.drop('电流2')
         self.df.to_excel(self.fn + '-rev.xlsx', index=False)
+        QMessageBox.information(self, '成功', '表格下载成功，位置' + self.fn + '-rev.xlsx')
+
+    # -------------------------------------------------------------
+    # 函数名： down_csv
+    # 功能： 表格下载
+    # -------------------------------------------------------------
+    def down_csv(self):
+        if self.file_fg == 0:
+            QMessageBox.information(self, '失败', '公主请先上传表格')
+            return
+        if '电流2' in self.df.index:
+            self.df.drop('电流2')
+        self.df.to_csv(self.fn + '-rev.csv', index=False)
+        QMessageBox.information(self, '成功', '表格下载成功，位置' + self.fn + '-rev.csv')
 
     # -------------------------------------------------------------
     # 函数名： make_plot

@@ -38,7 +38,7 @@
   <widget class="QPushButton" name="pb_da">
    <property name="geometry">
     <rect>
-     <x>290</x>
+     <x>400</x>
      <y>340</y>
      <width>75</width>
      <height>23</height>
@@ -51,7 +51,7 @@
   <widget class="QPushButton" name="pb_plot">
    <property name="geometry">
     <rect>
-     <x>530</x>
+     <x>660</x>
      <y>340</y>
      <width>75</width>
      <height>23</height>
@@ -64,8 +64,8 @@
   <widget class="QGroupBox" name="gb_da">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>100</y>
+     <x>50</x>
+     <y>124</y>
      <width>231</width>
      <height>101</height>
     </rect>
@@ -81,12 +81,12 @@
      <rect>
       <x>20</x>
       <y>45</y>
-      <width>71</width>
+      <width>111</width>
       <height>16</height>
      </rect>
     </property>
     <property name="text">
-     <string>数据去重</string>
+     <string>数据去重,精度=</string>
     </property>
    </widget>
    <widget class="QCheckBox" name="cb_vari">
@@ -131,12 +131,43 @@
      <string>数据去头尾</string>
     </property>
    </widget>
+   <widget class="QComboBox" name="cb_acc">
+    <property name="geometry">
+     <rect>
+      <x>130</x>
+      <y>40</y>
+      <width>51</width>
+      <height>22</height>
+     </rect>
+    </property>
+    <property name="currentText">
+     <string>中</string>
+    </property>
+    <property name="currentIndex">
+     <number>1</number>
+    </property>
+    <item>
+     <property name="text">
+      <string>低</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>中</string>
+     </property>
+    </item>
+    <item>
+     <property name="text">
+      <string>高</string>
+     </property>
+    </item>
+   </widget>
   </widget>
   <widget class="QGroupBox" name="gb_plot">
    <property name="geometry">
     <rect>
-     <x>40</x>
-     <y>220</y>
+     <x>50</x>
+     <y>244</y>
      <width>231</width>
      <height>101</height>
     </rect>
@@ -190,8 +221,8 @@
   <widget class="QLabel" name="l_step">
    <property name="geometry">
     <rect>
-     <x>80</x>
-     <y>70</y>
+     <x>90</x>
+     <y>94</y>
      <width>71</width>
      <height>16</height>
     </rect>
@@ -203,8 +234,8 @@
   <widget class="QSpinBox" name="sb_step">
    <property name="geometry">
     <rect>
-     <x>150</x>
-     <y>66</y>
+     <x>160</x>
+     <y>90</y>
      <width>61</width>
      <height>22</height>
     </rect>
@@ -216,7 +247,7 @@
   <widget class="QPushButton" name="pb_upload">
    <property name="geometry">
     <rect>
-     <x>160</x>
+     <x>310</x>
      <y>340</y>
      <width>75</width>
      <height>23</height>
@@ -229,14 +260,14 @@
   <widget class="QPushButton" name="pb_down">
    <property name="geometry">
     <rect>
-     <x>410</x>
+     <x>570</x>
      <y>340</y>
      <width>75</width>
      <height>23</height>
     </rect>
    </property>
    <property name="text">
-    <string>表格下载</string>
+    <string>excel下载</string>
    </property>
   </widget>
   <widget class="QGraphicsView" name="plot">
@@ -247,6 +278,32 @@
      <width>391</width>
      <height>261</height>
     </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="l_stat">
+   <property name="geometry">
+    <rect>
+     <x>50</x>
+     <y>60</y>
+     <width>231</width>
+     <height>16</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>表格未上传</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pb_downcsv">
+   <property name="geometry">
+    <rect>
+     <x>485</x>
+     <y>340</y>
+     <width>75</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>csv下载</string>
    </property>
   </widget>
  </widget>
