@@ -134,7 +134,7 @@ class DataWindow(QWidget):
     # -------------------------------------------------------------
     def data_analyse(self):
         if self.file_fg == 0:
-            QMessageBox.information(self, '失败', '公主请先上传表格')
+            QMessageBox.information(self, '失败', '请先上传表格')
             return
         if self.ui.cb_del.isChecked():
             self.df = self.df.drop([self.df.index[0]], axis=0)
@@ -152,9 +152,15 @@ class DataWindow(QWidget):
                                                                                    keep='first').sort_index()
         if self.ui.cb_vari.isChecked():
             k = self.ui.dsb_vari.value()
-            slope, intercept, r, _, _ = stats.linregress(self.df['电流2'], self.df['电压'])
-            line_func = lambda x: slope * x + intercept  # 线性规划函数
-            res = np.abs(self.df['电压'] - line_func(self.df['电流2']))  # 残差
+            if '电流2' in self.df.index:
+                slope, intercept, r, _, _ = stats.linregress(self.df['电流2'], self.df['电压'])
+                line_func = lambda x: slope * x + intercept  # 线性规划函数
+                res = np.abs(self.df['电压'] - line_func(self.df['电流2']))  # 残差
+                print(1)
+            else:
+                slope, intercept, r, _, _ = stats.linregress(self.df['电流'], self.df['电压'])
+                line_func = lambda x: slope * x + intercept  # 线性规划函数
+                res = np.abs(self.df['电压'] - line_func(self.df['电流']))  # 残差
             mean_res = res.mean()
             std_res = res.std()
             self.df = self.df[res <= mean_res + k * std_res]
@@ -167,11 +173,12 @@ class DataWindow(QWidget):
     # -------------------------------------------------------------
     def down_chart(self):
         if self.file_fg == 0:
-            QMessageBox.information(self, '失败', '公主请先上传表格')
+            QMessageBox.information(self, '失败', '请先上传表格')
             return
         if '电流2' in self.df.index:
-            self.df.drop('电流2')
-        self.df.to_excel(self.fn + '-rev.xlsx', index=False)
+            self.df.drop('电流2').to_excel(self.fn + '-rev.xlsx', index=False)
+        else:
+            self.df.to_excel(self.fn + '-rev.xlsx', index=False)
         QMessageBox.information(self, '成功', '表格下载成功，位置' + self.fn + '-rev.xlsx')
 
     # -------------------------------------------------------------
@@ -180,11 +187,12 @@ class DataWindow(QWidget):
     # -------------------------------------------------------------
     def down_csv(self):
         if self.file_fg == 0:
-            QMessageBox.information(self, '失败', '公主请先上传表格')
+            QMessageBox.information(self, '失败', '请先上传表格')
             return
         if '电流2' in self.df.index:
-            self.df.drop('电流2')
-        self.df.to_csv(self.fn + '-rev.csv', index=False)
+            self.df.drop('电流2').to_csv(self.fn + '-rev.csv', index=False)
+        else:
+            self.df.to_csv(self.fn + '-rev.csv', index=False)
         QMessageBox.information(self, '成功', '表格下载成功，位置' + self.fn + '-rev.csv')
 
     # -------------------------------------------------------------
@@ -193,7 +201,7 @@ class DataWindow(QWidget):
     # -------------------------------------------------------------
     def make_plot(self):
         if self.file_fg == 0:
-            QMessageBox.information(self, '失败', '公主请先上传表格')
+            QMessageBox.information(self, '失败', '请先上传表格')
             return
         plt.rcParams['figure.figsize'] = (20, 10)
         plt.rcParams['font.size'] = 15
@@ -256,7 +264,7 @@ class DataWindow(QWidget):
             plt.plot()
             plt.show()
         else:
-            QMessageBox.information(self, '失败', '公主请请至少选择一个制图对象吧')
+            QMessageBox.information(self, '失败', '请选择制图对象')
             return
 
 

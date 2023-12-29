@@ -13,7 +13,8 @@ import snap7
 import sys
 from datetime import datetime
 
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+from data import DataWindow
 import numpy as np
 import pyvisa as visa
 from PyQt5 import QtWidgets, QtGui
@@ -111,7 +112,6 @@ class SOCExpPlatform001(QWidget):
                         self.ui.tV_Discharge.cellWidget(i, j-1).setCurrentText(str(disConfig[i][keys[j]]))
                     else:
                         self.ui.tV_Discharge.setItem(i, j - 1, QTableWidgetItem(str(disConfig[i][keys[j]])))
-        self.ui.alarmBox.append('配置读取完成')
 
     # -------------------------------------------------------------
     # 函数名： initTable
@@ -227,7 +227,7 @@ class SOCExpPlatform001(QWidget):
             self.data = bytearray([0 for _ in range(300)])
             print('Fail to Connect PLC')
             self.ui.alarmBox.append('<font color="red">PLC连接失败！请检查PLC</font>')
-            self.ui.alarmBox.append(str(e))
+            self.ui.alarmBox.append('报错：' + str(e))
 
     # -------------------------------------------------------------
     # 函数名： plcGetValue
@@ -256,17 +256,17 @@ class SOCExpPlatform001(QWidget):
         self.GasPressure = snap7.util.get_real(self.data, 36)
         self.ui.l_GasPressure.setText('压力(N): %.2f' % self.GasPressure)
         self.H2Set = snap7.util.get_real(self.data, 70)
-        self.ui.dSB_SetH2.setText(str(self.H2Set))
+        self.ui.dSB_SetH2.setValue(self.H2Set)
         self.CH4Set = snap7.util.get_real(self.data, 74)
-        self.ui.dSB_SetCH4.setText(str(self.CH4Set))
+        self.ui.dSB_SetCH4.setValue(self.CH4Set)
         self.CO2Set = snap7.util.get_real(self.data, 78)
-        self.ui.dSB_SetCO2.setText(str(self.CO2Set))
+        self.ui.dSB_SetCO2.setValue(self.CO2Set)
         self.COSet = snap7.util.get_real(self.data, 90)
-        self.ui.dSB_SetCO.setText(str(self.COSet))
+        self.ui.dSB_SetCO.setValue(self.COSet)
         self.N2Set = snap7.util.get_real(self.data, 82)
-        self.ui.dSB_SetN2.setText(str(self.N2Set))
+        self.ui.dSB_SetN2.setValue(self.N2Set)
         self.AirSet = snap7.util.get_real(self.data, 86)
-        self.ui.dSB_SetAir.setText(str(self.AirSet))
+        self.ui.dSB_SetAir.setValue(self.AirSet)
         N2Time = snap7.util.get_int(self.data, 68)
         self.ui.sB_N2Time.setValue(N2Time)
         N2Flow = snap7.util.get_real(self.data, 64)
@@ -356,7 +356,7 @@ class SOCExpPlatform001(QWidget):
             self.ui.rB_dis.setChecked(True)
             self.ui.pB_DisCharger.setEnabled(True)
             self.ui.pB_Charger.setEnabled(False)
-        self.ui.alarmBox.append('设置完成')
+        self.ui.alarmBox.append('<font color="blue">初始化设置完成</font>')
 
     # -------------------------------------------------------------
     # 函数名： MFCInitVal
@@ -508,7 +508,7 @@ class SOCExpPlatform001(QWidget):
             self.ui.alarmBox.append('<font color="red">未连接plc,无法开启吹扫</font>')
             return
         self.ui.rB_Dry.setChecked(True)
-        self.ui.alarmBox.append('开启氮气吹扫成功')
+        self.ui.alarmBox.append('<font color="blue">已开启氮气吹扫</font>')
         snap7.util.set_byte(self.data, 180, 1)
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
 
@@ -521,7 +521,7 @@ class SOCExpPlatform001(QWidget):
             self.ui.alarmBox.append('<font color="red">未连接plc,无法停止吹扫</font>')
             return
         snap7.util.set_byte(self.data, 180, 0)
-        self.ui.alarmBox.append('已关闭氮气吹扫')
+        self.ui.alarmBox.append('<font color="blue">已停止氮气吹扫</font>')
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
 
     # -------------------------------------------------------------
@@ -542,7 +542,7 @@ class SOCExpPlatform001(QWidget):
         else:
             snap7.util.set_real(self.data, 200, 0)
             self.ui.pB_CylinderPress.setText('电缸加压')
-            self.ui.alarmBox.append('已关闭电缸加压')
+            self.ui.alarmBox.append('<font color="blue">电缸加压已停止</font>')
             self.ui.pB_CylinderPress.setStyleSheet('color:black')
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
 
@@ -556,13 +556,13 @@ class SOCExpPlatform001(QWidget):
             return
         snap7.util.set_byte(self.data, 188, 1)
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
-        self.ui.alarmBox.append('<font color="blue">回原位中。。。。</font>')
-        self.ui.bB_CylinderHome_S.button.setEnabled(False)
+        self.ui.alarmBox.append('<font color="blue">电缸加压设备回原位</font>')
+        self.ui.bB_CylinderHome_S                                                                                                                                                                                                                                                                                  .setEnabled(False)
         self.ui.pB_CylinderPress.setEnabled(False)
 
     # -------------------------------------------------------------
     # 函数名： gasPressNotHome
-    # 功能： 电缸加压停止回原位
+    # 功能： 电缸加压回原位停止
     # -------------------------------------------------------------
     def gasPressNotHome(self):
         if not self.plc_flag:
@@ -570,8 +570,8 @@ class SOCExpPlatform001(QWidget):
             return
         snap7.util.set_byte(self.data, 188, 0)
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
-        self.ui.alarmBox.append('回原位停止')
-        self.ui.bB_CylinderHome_S.button.setEnabled(True)
+        self.ui.alarmBox.append('<font color="blue">电缸加压设备停止</font>')
+        self.ui.bB_CylinderHome_S.setEnabled(True)
         self.ui.pB_CylinderPress.setEnabled(True)
 
     # -------------------------------------------------------------
@@ -612,7 +612,7 @@ class SOCExpPlatform001(QWidget):
             return
         self.StoveTempStart = 0
         self.ui.tV_Stove.setEnabled(True)
-        self.ui.alarmBox.append('停止加热成功')
+        self.ui.alarmBox.append('<font color="blue">加热停止成功</font>')
         self.ui.bB_Stove_S.setEnabled(True)
         snap7.util.set_real(self.data, 208, 0)
         self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
@@ -664,7 +664,7 @@ class SOCExpPlatform001(QWidget):
                 js[0]["para"][i]["time"] = item_time
             js[0]["start"] = startVal
             f.write(json.dumps(js, ensure_ascii=False))
-        self.ui.alarmBox.append('加热参数保存成功')
+        self.ui.alarmBox.append('<font color="blue">加热参数保存成功</font>')
         self.ui.tV_Discharge.clearContents()
         self.ui.tV_Stove.clearContents()
         self.readConfig()
@@ -715,9 +715,9 @@ class SOCExpPlatform001(QWidget):
         for i in range(3):
             data.append(float(self.dataList[i]))
 
-        temp = float(self.dataList[0]) * 1000 / self.Battery_Area
+        temp = float(self.dataList[0]) * 1000 / self.batteryArea
         data.append(temp)
-        temp = float(self.dataList[2]) * 1000 / self.Battery_Area
+        temp = float(self.dataList[2]) * 1000 / self.batteryArea
         data.append(temp)
         for i in range(3):
             data.append(self.PLCDataInput[i + 8])
@@ -754,63 +754,64 @@ class SOCExpPlatform001(QWidget):
     # -------------------------------------------------------------
     @pyqtSlot()
     def on_pB_DataAnalyze_clicked(self):
-        self.pltImage()
+        #self.pltImage()
+        self.dataOpen()
 
-    # -------------------------------------------------------------
-    # 函数名： pltImage
-    # 功能： 数据制图
-    # -------------------------------------------------------------
-    def pltImage(self):
-        curPath = os.getcwd()
-        filename, flt = QFileDialog.getOpenFileName(self, '读取文件', curPath, '数据文件(*.csv);;所有文件(*.*)')
-        if filename == '':
-            return
-        t0 = np.loadtxt(filename, encoding='Latin-1', dtype=np.str_, delimiter=',', skiprows=2, usecols=2)
-        t0 = [datetime.strptime(i, '%H:%M:%S.%f') for i in t0]
-        t1 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=3)
-        t2 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=4)
-        t3 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=5)
-        t4 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=6)
-        t5 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=7)
-        t6 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=8)
-        t7 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=9)
-        t8 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=10)
-        t9 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=11)
-        t10 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=12)
-        t11 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=13)
-        t12 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=14)
-        t13 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=15)
-        t14 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=16)
-        fig, ax = plt.subplots()
-        plt.xticks(rotation=45)
-        plt.rcParams['font.sans-serif'] = ['SimHei']
-        l1, = ax.plot(t0, t1, visible=False, lw=2, markersize=6, label='电流', marker='s')
-        l2, = ax.plot(t0, t2, visible=False, lw=2, markersize=6, label='电压', marker='s')
-        l3, = ax.plot(t0, t3, visible=False, lw=2, markersize=6, label='功率', marker='s')
-        l4, = ax.plot(t0, t4, visible=False, lw=2, markersize=6, label='电流密度', marker='s')
-        l5, = ax.plot(t0, t5, visible=False, lw=2, markersize=6, label='功率密度', marker='s')
-        l6, = ax.plot(t0, t6, visible=False, lw=2, markersize=6, label='单体电压', marker='s')
-        l7, = ax.plot(t0, t7, visible=False, lw=2, markersize=6, label='加压压力', marker='s')
-        l8, = ax.plot(t0, t8, visible=False, lw=2, markersize=6, label='加热炉温度', marker='s')
-        l14, = ax.plot(t0, t9, visible=False, lw=2, markersize=6, label='H2流量', marker='s')
-        l15, = ax.plot(t0, t10, visible=False, lw=2, markersize=6, label='CH4流量', marker='s')
-        l16, = ax.plot(t0, t11, visible=False, lw=2, markersize=6, label='CO2流量', marker='s')
-        l17, = ax.plot(t0, t12, visible=False, lw=2, markersize=6, label='N2流量', marker='s')
-        l18, = ax.plot(t0, t13, visible=False, lw=2, markersize=6, label='Air流量', marker='s')
-        l19, = ax.plot(t0, t14, visible=False, lw=2, markersize=6, label='CO流量', marker='s')
-        plt.subplots_adjust(left=0.2)
-        self.lines = [
-            'l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8',
-            'l14', 'l15', 'l16', 'l17', 'l18', 'l19']
-        rax = plt.axes([0.05, 0.4, 0.1, 0.3])
-        self.labels = [str(line.get_label()) for line in self.lines]
-        visibility = [line.get_visible() for line in self.lines]
-        self.check = CheckButtons(rax, self.labels, visibility)
-        plt.legend(self.lines, self.labels, bbox_to_anchor=(8.7, 1), loc='upper left', borderaxespad=0)
-        self.check.on_clicked(self.func)
-        figManager = plt.get_current_fig_manager()
-        figManager.window.showMaximized()
-        plt.show()
+    # # -------------------------------------------------------------
+    # # 函数名： pltImage
+    # # 功能： 数据制图
+    # # -------------------------------------------------------------
+    # def pltImage(self):
+    #     curPath = os.getcwd()
+    #     filename, flt = QFileDialog.getOpenFileName(self, '读取文件', curPath, '数据文件(*.csv);;所有文件(*.*)')
+    #     if filename == '':
+    #         return
+    #     t0 = np.loadtxt(filename, encoding='Latin-1', dtype=np.str_, delimiter=',', skiprows=2, usecols=2)
+    #     t0 = [datetime.strptime(i, '%H:%M:%S.%f') for i in t0]
+    #     t1 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=3)
+    #     t2 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=4)
+    #     t3 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=5)
+    #     t4 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=6)
+    #     t5 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=7)
+    #     t6 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=8)
+    #     t7 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=9)
+    #     t8 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=10)
+    #     t9 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=11)
+    #     t10 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=12)
+    #     t11 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=13)
+    #     t12 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=14)
+    #     t13 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=15)
+    #     t14 = np.loadtxt(filename, encoding='Latin-1', dtype=np.float32, delimiter=',', skiprows=2, usecols=16)
+    #     fig, ax = plt.subplots()
+    #     plt.xticks(rotation=45)
+    #     plt.rcParams['font.sans-serif'] = ['SimHei']
+    #     l1, = ax.plot(t0, t1, visible=False, lw=2, markersize=6, label='电流', marker='s')
+    #     l2, = ax.plot(t0, t2, visible=False, lw=2, markersize=6, label='电压', marker='s')
+    #     l3, = ax.plot(t0, t3, visible=False, lw=2, markersize=6, label='功率', marker='s')
+    #     l4, = ax.plot(t0, t4, visible=False, lw=2, markersize=6, label='电流密度', marker='s')
+    #     l5, = ax.plot(t0, t5, visible=False, lw=2, markersize=6, label='功率密度', marker='s')
+    #     l6, = ax.plot(t0, t6, visible=False, lw=2, markersize=6, label='单体电压', marker='s')
+    #     l7, = ax.plot(t0, t7, visible=False, lw=2, markersize=6, label='加压压力', marker='s')
+    #     l8, = ax.plot(t0, t8, visible=False, lw=2, markersize=6, label='加热炉温度', marker='s')
+    #     l14, = ax.plot(t0, t9, visible=False, lw=2, markersize=6, label='H2流量', marker='s')
+    #     l15, = ax.plot(t0, t10, visible=False, lw=2, markersize=6, label='CH4流量', marker='s')
+    #     l16, = ax.plot(t0, t11, visible=False, lw=2, markersize=6, label='CO2流量', marker='s')
+    #     l17, = ax.plot(t0, t12, visible=False, lw=2, markersize=6, label='N2流量', marker='s')
+    #     l18, = ax.plot(t0, t13, visible=False, lw=2, markersize=6, label='Air流量', marker='s')
+    #     l19, = ax.plot(t0, t14, visible=False, lw=2, markersize=6, label='CO流量', marker='s')
+    #     plt.subplots_adjust(left=0.2)
+    #     self.lines = [
+    #         'l1', 'l2', 'l3', 'l4', 'l5', 'l6', 'l7', 'l8',
+    #         'l14', 'l15', 'l16', 'l17', 'l18', 'l19']
+    #     rax = plt.axes([0.05, 0.4, 0.1, 0.3])
+    #     self.labels = [str(line.get_label()) for line in self.lines]
+    #     visibility = [line.get_visible() for line in self.lines]
+    #     self.check = CheckButtons(rax, self.labels, visibility)
+    #     plt.legend(self.lines, self.labels, bbox_to_anchor=(8.7, 1), loc='upper left', borderaxespad=0)
+    #     self.check.on_clicked(self.func)
+    #     figManager = plt.get_current_fig_manager()
+    #     figManager.window.showMaximized()
+    #     plt.show()
 
     # -------------------------------------------------------------
     # 函数名： radioButtonClicked
@@ -875,7 +876,7 @@ class SOCExpPlatform001(QWidget):
             self.ui.pB_DisCharger.setChecked(False)
             self.ui.pB_Charger.setChecked(False)
             self.ui.l_Connect_Dis.setText('未连接负载')
-            self.ui.l_Connect_Dis.setStyleSheet('color:black')
+            #self.ui.l_Connect_Dis.setStyleSheet('color:black')
             self.ui.pB_DisCharger.setText('连接电子负载')
             self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
         elif self.ui.rB_ch.isChecked():
@@ -885,7 +886,7 @@ class SOCExpPlatform001(QWidget):
             self.ui.pB_DisCharger.setChecked(False)
             self.ui.pB_Charger.setChecked(False)
             self.ui.l_Connect_Ch.setText('未连接电源')
-            self.ui.l_Connect_Ch.setStyleSheet('color:black')
+            #self.ui.l_Connect_Ch.setStyleSheet('color:black')
             self.ui.pB_Charger.setText('连接直流电源')
             self.plc.write_area(snap7.types.Areas.DB, 1, 0, self.data)
 
@@ -1330,7 +1331,7 @@ class SOCExpPlatform001(QWidget):
                     else:
                         js[1]["para"][i][keys[j + 1]] = self.ui.tV_Discharge.item(i, j).text()
             f.write(json.dumps(js, ensure_ascii=False))
-        self.ui.alarmBox.append('充放电参数保存成功')
+        self.ui.alarmBox.append('<font color="blue">充放电参数保存成功</font>')
         self.ui.tV_Discharge.clearContents()
         self.ui.tV_Stove.clearContents()
         self.readConfig()
@@ -1358,6 +1359,8 @@ class SOCExpPlatform001(QWidget):
                 print('release')
                 self.rm = visa.ResourceManager()
                 self.res = self.rm.open_resource('ASRL2::INSTR')
+                self.res.write_termination = '\n'
+                self.res.read_termination = '\n'
                 print(type(self.res))
                 self.Thread = RunThread(self.res)
                 self.Thread.signal.connect(self.ReadDisCharge)
@@ -1369,12 +1372,13 @@ class SOCExpPlatform001(QWidget):
                 self.res.write('SYST:REM')
                 self.res.write('SYST:SENS ON')
                 self.ui.pB_DisCharger.setText('断开电子负载')
+                self.ui.alarmBox.append('<font color="blue">成功连接电子负载' + readList[1] + '</font>')
             except Exception:
                 self.ui.alarmBox.append('<font color="red">无法连接电子负载，请检查</font>')
 
         else:
             self.ui.pB_DisCharger.setText('连接电子负载')
-            self.ui.l_Connect_Dis.setStyleSheet('color:black')
+            #self.ui.l_Connect_Dis.setStyleSheet('color:black')
             self.ui.l_Connect_Dis.setText('未连接负载')
 
     # -------------------------------------------------------------
@@ -1387,6 +1391,8 @@ class SOCExpPlatform001(QWidget):
             try:
                 self.rm = visa.ResourceManager()
                 self.res = self.rm.open_resource('ASRL3::INSTR')
+                self.res.write_termination = '\n'
+                self.res.read_termination = '\n'
                 print(type(self.res))
                 self.Thread_Ch = RunThread(self.res)
                 self.Thread_Ch.signal.connect(self.readCharge)
@@ -1397,12 +1403,13 @@ class SOCExpPlatform001(QWidget):
                 self.ui.l_Connect_Ch.setStyleSheet('color:green')
                 self.res.write('SYST:REM')
                 self.ui.pB_Charger.setText('断开直流电源')
+                self.ui.alarmBox.append('<font color="blue">成功连接直流电源' + readList[1] + '</font>')
             except:
                 self.ui.alarmBox.append('<font color="red">无法连接直流电源，请检查</font>')
 
         else:
             self.ui.pB_Charger.setText('连接直流电源')
-            self.ui.l_Connect_Ch.setStyleSheet('color:black')
+            #self.ui.l_Connect_Ch.setStyleSheet('color:black')
             self.ui.l_Connect_Ch.setText('未连接电源')
 
     # -------------------------------------------------------------
@@ -1414,8 +1421,8 @@ class SOCExpPlatform001(QWidget):
         try:
             Cur = float(self.dataList[0])
             Vlot = float(self.dataList[1])
-            CURRD = float(self.dataList[0]) * 1000 / self.Battery_Area
-            POWD = float(self.dataList[2]) * 1000 / self.Battery_Area
+            CURRD = float(self.dataList[0]) * 1000 / self.batteryArea
+            POWD = float(self.dataList[2]) * 1000 / self.batteryArea
             if Cur > 0.1:
                 self.ui.l_CURRDis.setText('电流(A):%s' % self.dataList[0])
             else:
@@ -1445,8 +1452,8 @@ class SOCExpPlatform001(QWidget):
         try:
             Cur = float(self.dataList[0])
             Vlot = float(self.dataList[1])
-            CURRD = float(self.dataList[0]) * 1000 / self.Battery_Area
-            POWD = float(self.dataList[2]) * 1000 / self.Battery_Area
+            CURRD = float(self.dataList[0]) * 1000 / self.batteryArea
+            POWD = float(self.dataList[2]) * 1000 / self.batteryArea
             if Cur > 0.1:
                 self.ui.l_CURRDis.setText('电流(A):%s' % self.dataList[0])
             else:
@@ -1690,11 +1697,11 @@ class SOCExpPlatform001(QWidget):
         self.alarmCurrentData = snap7.util.get_dword(self.data, 195)
         n2Flow = snap7.util.get_byte(self.data, 180)
         if n2Flow == 1:
-            self.ui.alarmBox.append('氮气吹扫中')
-            self.ui.bB_N2Flow_S.button.setEnabled(False)
+            # 氮气吹扫已开始
+            self.ui.bB_N2Flow_S.setEnabled(False)
         else:
-            self.ui.alarmBox.append('氮气未吹扫')
-            self.ui.bB_N2Flow_S.button.setEnabled(True)
+            # 氮气吹扫未开始
+            self.ui.bB_N2Flow_S.setEnabled(True)
         self.GasPressure = snap7.util.get_real(self.data, 36)
         self.ui.l_GasPressure.setText('压力(N): %.2f' % self.GasPressure)
         LowLevel = snap7.util.get_byte(self.data, 189)
@@ -1704,7 +1711,7 @@ class SOCExpPlatform001(QWidget):
             self.ui.l_caution.setStyleSheet('image:url(:/images/img/caution.png)')
         CylinderHome = snap7.util.get_bool(self.data, 199, 0)
         if CylinderHome:
-            self.GassPressNotHome()
+            self.gasPressNotHome()
         if self.alarmCurrentData != self.alarmData:
             alarm = snap7.util.get_bool(self.data, 195, 0)
             timeData = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
@@ -1966,7 +1973,7 @@ class SOCExpPlatform001(QWidget):
             self.PLCDataInput.append(data)
 
         CVMData = np.array(self.PLCDataInput[8:16])
-        self.ui.label_battery.setValue(CVMData[0])
+        # self.ui.label_battery.setValue(CVMData[0])
         self.ui.l_TEMStove.setText('加热炉温度(℃):%.2f ' % CVMData[2])
         self.H2Set = self.ui.dSB_SetH2.value()
         snap7.util.set_real(self.data, 70, self.H2Set)
@@ -1981,7 +1988,7 @@ class SOCExpPlatform001(QWidget):
         self.AirSet = self.ui.dSB_SetAir.value()
         snap7.util.set_real(self.data, 86, self.AirSet)
         N2Time = self.ui.sB_N2Time.value()
-        snap7.util.set_int(self.data, 68, N2Time)
+        snap7.util.set_real(self.data, 68, N2Time)
         N2Flow = self.ui.dSB_N2FlowRate.value()
         snap7.util.set_real(self.data, 64, N2Flow)
         H2LimitL = self.MFCDict['H2L']
@@ -2008,9 +2015,9 @@ class SOCExpPlatform001(QWidget):
         snap7.util.set_real(self.data, 118, N2LimitL)
         N2LimitH = self.MFCDict['N2L']
         snap7.util.set_real(self.data, 122, N2LimitH)
-        SVLimitL = self.singleVolt[0]
+        SVLimitL = self.ui.singleVolt[0]
         snap7.util.set_real(self.data, 162, SVLimitL)
-        SVLimitH = self.singleVolt[1]
+        SVLimitH = self.ui.singleVolt[1]
         snap7.util.set_real(self.data, 158, SVLimitH)
         TAH = self.ui.dBB_SetTempAlarmHigh.value()
         snap7.util.set_real(self.data, 166, TAH)
@@ -2171,6 +2178,7 @@ class SOCExpPlatform001(QWidget):
             self.tubework(self.ui.pgB_Wet_4, 0, 0)
             self.tubework(self.ui.pgB_Wet_5, 0, 0)
             self.tubework(self.ui.pgB_IN, 0, 0)
+            self.ui.pB_ManualWet.setStyleSheet('image:url(:/images/gate1.png)')
         if self.ui.rB_Dry.isChecked():
             self.data[187] = 1
             self.tubework(self.ui.pgB_Dry_2, 1, 1)
@@ -2182,6 +2190,7 @@ class SOCExpPlatform001(QWidget):
             self.tubework(self.ui.pgB_Dry_2, 0, 1)
             self.tubework(self.ui.pgB_Dry_3, 0, 1)
             self.tubework(self.ui.pgB_Dry_4, 0, 1)
+            self.ui.pB_ManualDry.setStyleSheet('image:url(:/images/gate2.png)')
             if not self.ui.rB_Wet.isChecked():
                 self.tubework(self.ui.pgB_IN, 0, 0)
         # PumpFlowRate = self.ui.sB_PumpFlowRate.value()
@@ -2248,8 +2257,8 @@ class SOCExpPlatform001(QWidget):
                 self.seriesCURR.append(self.x, float(self.dataList[0]))
                 self.seriesVOLT.append(self.x, float(self.dataList[1]))
                 self.seriesPOW.append(self.x, float(self.dataList[2]))
-                self.seriesCURRD.append(self.x, float(self.dataList[0]) * 1000 / self.Battery_Area)
-                self.seriesPOWD.append(self.x, float(self.dataList[2]) * 1000 / self.Battery_Area)
+                self.seriesCURRD.append(self.x, float(self.dataList[0]) * 1000 / self.batteryArea)
+                self.seriesPOWD.append(self.x, float(self.dataList[2]) * 1000 / self.batteryArea)
             except Exception:
                 print('String TO Float Error')
 
@@ -2261,7 +2270,7 @@ class SOCExpPlatform001(QWidget):
     # 功能：自动重置配置
     # -------------------------------------------------------------
     def configResetAuto(self):
-        ORIGIN_CONFIG = '[{"name": "stove", "para": [{"id": 1, "temp": "701", "time": "10"}, {"id": 2, "temp": "702", "time": "20"}], "start": 0}, {"name": "discharge", "para": [{"id": 1, "参与状态": "参与", "过程选择": "充电", "工作模式": "LCC(A)", "开始数值": 1, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "小于", "触发数值": 1}, {"id": 2, "参与状态": "参与", "过程选择": "放电", "工作模式": "CC(A)", "开始数值": 0, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "大于", "触发数值": 0}]}]'
+        ORIGIN_CONFIG = '[{"name": "stove", "para": [{"id": 1, "temp": "701", "time": "10"}, {"id": 2, "temp": "702", "time": "20"}], "start": 1}, {"name": "discharge", "para": [{"id": 1, "参与状态": "参与", "过程选择": "充电", "工作模式": "LCC(A)", "开始数值": 1, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "小于", "触发数值": 1}, {"id": 2, "参与状态": "参与", "过程选择": "放电", "工作模式": "CC(A)", "开始数值": 0, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "大于", "触发数值": 0}]}]'
         with open('config.json', 'w', encoding='utf-8') as f:
             f.write(json.dumps(eval(ORIGIN_CONFIG), ensure_ascii=False))
             self.ui.alarmBox.append('<font color="red">配置信息读取失败，重置配置信息</font>')
@@ -2274,7 +2283,7 @@ class SOCExpPlatform001(QWidget):
         reply = QMessageBox.question(self, "Alarm", "配置信息重置后不可回退，确认继续么？", QMessageBox.Yes | QMessageBox.No)
         if reply == QMessageBox.No:
             return
-        ORIGIN_CONFIG = '[{"name": "stove", "para": [{"id": 1, "temp": "701", "time": "10"}, {"id": 2, "temp": "702", "time": "20"}], "start": 0}, {"name": "discharge", "para": [{"id": 1, "参与状态": "参与", "过程选择": "充电", "工作模式": "LCC(A)", "开始数值": 1, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "小于", "触发数值": 1}, {"id": 2, "参与状态": "参与", "过程选择": "放电", "工作模式": "CC(A)", "开始数值": 0, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "大于", "触发数值": 0}]}]'
+        ORIGIN_CONFIG = '[{"name": "stove", "para": [{"id": 1, "temp": "701", "time": "10"}, {"id": 2, "temp": "702", "time": "20"}], "start": 1}, {"name": "discharge", "para": [{"id": 1, "参与状态": "参与", "过程选择": "充电", "工作模式": "LCC(A)", "开始数值": 1, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "小于", "触发数值": 1}, {"id": 2, "参与状态": "参与", "过程选择": "放电", "工作模式": "CC(A)", "开始数值": 0, "递增数值": 0, "单步时间": 0, "停机依据": "电堆电流(A)", "判断逻辑": "大于", "触发数值": 0}]}]'
         with open('config.json', 'w', encoding='utf-8') as f:
             f.write(json.dumps(eval(ORIGIN_CONFIG), ensure_ascii=False))
             self.ui.alarmBox.append('<font color="red">配置信息已重置</font>')
@@ -2316,6 +2325,10 @@ class SOCExpPlatform001(QWidget):
             self.batteryNO, self.unitBattery, self.unitBatteryPack, self.batteryArea = self.window4.setBatteryInfo()
             self.ui.l_batteryNO.setText("电池编号：" + self.batteryNO)
             self.ui.alarmBox.append("已设置电池信息，编号" + self.batteryNO)
+
+    def dataOpen(self):
+        self.window5 = DataWindow()
+        self.window5.show()
 
 
 # -------------------------------------------------------------
